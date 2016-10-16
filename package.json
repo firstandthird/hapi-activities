@@ -1,0 +1,29 @@
+{
+  "name": "hapi-activities",
+  "version": "0.0.1",
+  "description": "Hapi plugin for doing deferred processes",
+  "main": "index.js",
+  "scripts": {
+    "test": "lab --leaks",
+    "lint": "eslint **/*.js"
+  },
+  "keywords": [
+    "hapi",
+    "methods"
+  ],
+  "author": "First+Third",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^2.1.1",
+    "lodash": "^4.16.4",
+    "mongodb": "^2.2.10"
+  },
+  "devDependencies": {
+    "code": "^2.1.0",
+    "eslint": "^3.4.0",
+    "eslint-config-firstandthird": "^3.0.2",
+    "eslint-plugin-import": "^1.14.0",
+    "hapi": "^10.1.0",
+    "lab": "^8.0.2"
+  }
+}
