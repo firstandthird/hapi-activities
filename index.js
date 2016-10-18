@@ -1,3 +1,4 @@
+'use strict';
 const mongo = require('mongodb');
 const async = require('async');
 const _ = require('lodash');
