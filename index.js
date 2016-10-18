@@ -145,7 +145,7 @@ exports.register = (server, options, next) => {
       });
     };
     timer();
-    
+
     // now tell hapi that we're done registering the plugin!
     next();
   });
