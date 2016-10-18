@@ -141,6 +141,44 @@ lab.experiment('hapi-activities', () => {
     });
   });
 
+  lab.test('can handle and report server errors during an action', { timeout: 8000 }, (done) => {
+    const numberOfCalls = {
+      breakfast: 0
+    };
+    server.method('breakfast', (data, callback) => {
+      numberOfCalls.breakfast ++;
+      return not.a.thing();
+    });
+    server.register({
+      register: hapiActivities,
+      options: {
+        mongo: {
+          host: 'mongodb://localhost:27017',
+          collectionName: 'hapi-activities-test'
+        },
+        interval: 500,
+        activities: {
+          'during school': ['breakfast']
+        }
+      }
+    }, (err) => {
+      server.methods.activity('during school', {
+        name: 'sven',
+        age: 5
+      });
+      setTimeout(() => {
+        code.expect(numberOfCalls.breakfast).to.equal(1);
+        // check the db object:
+        collection.findOne({ activityName: 'during school' }, (err, activity) => {
+          code.expect(activity.status).to.equal('failed');
+          code.expect(activity.results.length).to.equal(1);
+          code.expect(activity.results[0].error).to.include('not is not defined');
+          done();
+        });
+      }, 3000);
+    });
+  });
+
   lab.test('handles actions passed in a { method s: <method>, data: <data> } form', { timeout: 10000 }, (done) => {
     let passedData = null;
     server.method('airplanes', (data, callback) => {

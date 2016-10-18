@@ -73,16 +73,22 @@ exports.register = (server, options, next) => {
                 // if a timeout is specified then put a timeout wrapper around the server method call:
                 const actionCall = settings.timeout ? async.timeout(server.methods[action], settings.timeout) : server.methods[action];
                 // now make the call:
-                actionCall(actionData, (error, output) => {
-                  // will log async's ETIMEDOUT error, as well as other errors for this action:
-                  if (error) {
-                    updatedActivity.results.push({ action, error });
-                    updatedActivity.status = 'failed';
-                  } else {
-                    updatedActivity.results.push({ action, output });
-                  }
+                try {
+                  actionCall(actionData, (error, output) => {
+                    // will log async's ETIMEDOUT error, as well as other errors for this action:
+                    if (error) {
+                      updatedActivity.results.push({ action, error });
+                      updatedActivity.status = 'failed';
+                    } else {
+                      updatedActivity.results.push({ action, output });
+                    }
+                    return eachDone();
+                  });
+                } catch (e) {
+                  updatedActivity.results.push({ action, error: `${e.name} ${e.message} ` });
+                  updatedActivity.status = 'failed';
                   eachDone();
-                });
+                }
               }, () => {
                 // when we have the results from all actions, we're ready to update the activity:
                 done(null, updatedActivity);
@@ -110,9 +116,6 @@ exports.register = (server, options, next) => {
 
     // register the 'activity' method with the server:
     server.method('activity', (activityName, activityData) => {
-      if (settings.log) {
-        server.log(['hapi-activities', 'new-activity', 'debug'], { message: `Registering a new activity: '${activityName}'`, data: activityData });
-      }
       collection.insertOne({
         activityName,
         activityData,
@@ -121,6 +124,9 @@ exports.register = (server, options, next) => {
       }, (insertErr) => {
         if (insertErr) {
           server.log(insertErr);
+        }
+        if (settings.log) {
+          server.log(['hapi-activities', 'new-activity', 'debug'], { message: `Registering a new activity: '${activityName}'`, data: activityData });
         }
       });
     });
