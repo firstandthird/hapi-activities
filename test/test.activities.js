@@ -218,4 +218,23 @@ lab.experiment('hapi-activities', () => {
       }, 2500);
     });
   });
+
+  lab.test('will not add an activity if it does not exist', { timeout: 10000 }, (done) => {
+    server.register({
+      register: hapiActivities,
+      options: {
+        mongo: {
+          host: 'mongodb://localhost:27017',
+          collectionName: 'hapi-activities-test'
+        },
+        interval: 1000, // 1 second
+        activities: {} // no activities
+      }
+    }, (err) => {
+      server.methods.activity('perpetual motion', {});
+      setTimeout(() => {
+        done();
+      }, 2500);
+    });
+  });
 });

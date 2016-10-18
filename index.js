@@ -26,7 +26,7 @@ exports.register = (server, options, next) => {
     // update all activities:
     const updateActivities = (allDone) => {
       automap(
-        // fetch all 'waiting' activities and mark them as 'processing':
+        // fetch all 'waiting' activities
         (done) => {
           collection
           .find({ status: 'waiting' })
@@ -38,17 +38,10 @@ exports.register = (server, options, next) => {
             if (results.length === 0) {
               return allDone();
             }
-            // otherwise mark them all as 'processing' with one db call and proceed to process them:
-            const ids = _.reduce(results, (memo, result) => {
-              memo.push(result._id);
-              return memo;
-            }, []);
-            collection.update({ _id: { $in: ids } }, { $set: { status: 'processing' } }, { multi: true }, () => {
-              done(null, results);
-            });
+            done(null, results);
           });
         },
-        // for each activity we just fetched and marked, do the following:
+        // for each activity we just fetched, do the following process:
         (activity) => {
           return {
             // log that it's underway:
@@ -56,7 +49,9 @@ exports.register = (server, options, next) => {
               if (settings.log) {
                 server.log(['hapi-activities', 'starting-activity', 'debug'], { message: 'Processing underway for activity', data: activity });
               }
-              done();
+              collection.update({ _id: activity._id }, { $set: { status: 'processing' } }, () => {
+                done();
+              });
             },
             // execute the actions in parallel:
             performActions: ['logActivity', (results, done) => {
@@ -117,6 +112,11 @@ exports.register = (server, options, next) => {
 
     // register the 'activity' method with the server:
     server.method('activity', (activityName, activityData) => {
+      // verify that this activity exists:
+      if (!settings.activities[activityName]) {
+        server.log(['hapi-activities', 'error'], `Could not find an activity named ${activityName}`);
+        return;
+      }
       collection.insertOne({
         activityName,
         activityData,
