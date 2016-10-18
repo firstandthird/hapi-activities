@@ -2,17 +2,17 @@ const mongo = require('mongodb');
 const async = require('async');
 const _ = require('lodash');
 const automap = require('automap');
+const defaults = {
+  mongo: {
+    host: 'mongodb://localhost:27017',
+    collectionName: 'hapi-activities'
+  },
+  timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
+  interval: 5 * 60 * 1000, // 5 minutes
+  log: false
+};
 
 exports.register = (server, options, next) => {
-  const defaults = {
-    mongo: {
-      host: 'mongodb://localhost:27017',
-      collectionName: 'hapi-activities'
-    },
-    timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
-    interval: 5 * 60 * 1000, // 5 minutes
-    log: true
-  };
   const settings = _.defaults(options, defaults);
   // connect to db:
   mongo.connect(settings.mongo.host, (err, db) => {
@@ -37,7 +37,7 @@ exports.register = (server, options, next) => {
             if (results.length === 0) {
               return allDone();
             }
-            // otherwise mark them all as 'processing' and proceed to process them:
+            // otherwise mark them all as 'processing' with one db call and proceed to process them:
             const ids = _.reduce(results, (memo, result) => {
               memo.push(result._id);
               return memo;
@@ -64,9 +64,16 @@ exports.register = (server, options, next) => {
                 results: []
               };
               async.each(settings.activities[activity.activityName], (action, eachDone) => {
+                let actionData = activity.activityData;
+                // merge any default parameters for this action:
+                if (typeof action === 'object') {
+                  actionData = _.defaults(actionData, action.data);
+                  action = action.method;
+                }
                 // if a timeout is specified then put a timeout wrapper around the server method call:
                 const actionCall = settings.timeout ? async.timeout(server.methods[action], settings.timeout) : server.methods[action];
-                actionCall(activity.activityData, (error, output) => {
+                // now make the call:
+                actionCall(actionData, (error, output) => {
                   // will log async's ETIMEDOUT error, as well as other errors for this action:
                   if (error) {
                     updatedActivity.results.push({ action, error });
@@ -77,10 +84,11 @@ exports.register = (server, options, next) => {
                   eachDone();
                 });
               }, () => {
+                // when we have the results from all actions, we're ready to update the activity:
                 done(null, updatedActivity);
               });
             }],
-            // mark the activity as either 'complete' or 'failed':
+            // update the activity with the results of processing the actions:
             completeActivity: ['performActions', (previous, done) => {
               const updatedActivity = {
                 results: previous.performActions.results,
@@ -99,6 +107,7 @@ exports.register = (server, options, next) => {
         },
       allDone);
     };
+
     // register the 'activity' method with the server:
     server.method('activity', (activityName, activityData) => {
       if (settings.log) {
@@ -116,13 +125,28 @@ exports.register = (server, options, next) => {
       });
     });
 
-    // manage the interval polling:
+    // keep processing activities until the server.stop method is called
+    let continueProcessing = true;
+    server.ext({
+      type: 'onPreStop',
+      method: (request, done) => {
+        continueProcessing = false;
+        done();
+      }
+    });
     const timer = () => {
+      if (!continueProcessing) {
+        return;
+      }
       updateActivities(() => {
-        setTimeout(timer, settings.interval);
+        if (continueProcessing) {
+          setTimeout(timer, settings.interval);
+        }
       });
     };
     timer();
+    
+    // now tell hapi that we're done registering the plugin!
     next();
   });
 };
