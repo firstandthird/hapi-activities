@@ -20,7 +20,7 @@ lab.experiment('hapi-activities', () => {
     server.connection({ port: 8080 });
     mongo.connect('mongodb://localhost:27017', (err, theDb) => {
       if (err) {
-        console.log(err)
+        console.log(err);
       }
       db = theDb;
       collection = db.collection('hapi-activities-test');
@@ -90,9 +90,9 @@ lab.experiment('hapi-activities', () => {
             code.expect(numberOfCalls.kickball).to.equal(2);
             code.expect(numberOfCalls.trumpet).to.equal(5);
             code.expect(numberOfCalls.pottery).to.equal(2);
-            collection.findOne({}, (err, activity) => {
-              code.expect(activity.status).to.equal('complete');
-              code.expect(activity.results.length).to.equal(3);
+            collection.findOne({}, (err, activity2) => {
+              code.expect(activity2.status).to.equal('complete');
+              code.expect(activity2.results.length).to.equal(3);
               done();
             });
           }, 2500);
