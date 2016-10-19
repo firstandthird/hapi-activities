@@ -1,8 +1,8 @@
 'use strict';
 const mongo = require('mongodb');
 const async = require('async');
-const _ = require('lodash');
 const automap = require('automap');
+
 const defaults = {
   mongo: {
     host: 'mongodb://localhost:27017',
@@ -14,7 +14,7 @@ const defaults = {
 };
 
 exports.register = (server, options, next) => {
-  const settings = _.defaults(options, defaults);
+  const settings = Object.assign({}, defaults, options);
   // connect to db:
   mongo.connect(settings.mongo.host, (err, db) => {
     if (err) {
@@ -32,7 +32,7 @@ exports.register = (server, options, next) => {
           .find({ status: 'waiting' })
           .toArray((dbErr, results) => {
             if (dbErr) {
-              server.log(['hapi-activities', 'error'], dbErr);
+              return allDone(dbErr);
             }
             // can go back to sleep if nothing was found:
             if (results.length === 0) {
@@ -46,10 +46,13 @@ exports.register = (server, options, next) => {
           return {
             // log that it's underway:
             logActivity: (done) => {
-              if (settings.log) {
-                server.log(['hapi-activities', 'starting-activity', 'debug'], { message: 'Processing underway for activity', data: activity });
-              }
-              collection.update({ _id: activity._id }, { $set: { status: 'processing' } }, () => {
+              collection.update({ _id: activity._id }, { $set: { status: 'processing' } }, (err) => {
+                if (err) {
+                  server.log(['hapi-activities', 'error'], err);
+                }
+                if (settings.log) {
+                  server.log(['hapi-activities', 'starting-activity', 'debug'], { message: 'Processing underway for activity', data: activity });
+                }
                 done();
               });
             },
@@ -63,7 +66,7 @@ exports.register = (server, options, next) => {
                 let actionData = activity.activityData;
                 // merge any default parameters for this action:
                 if (typeof action === 'object') {
-                  actionData = _.defaults(actionData, action.data);
+                  actionData = Object.assign(action.data, actionData);
                   action = action.method;
                 }
                 // if a timeout is specified then put a timeout wrapper around the server method call:
@@ -98,12 +101,7 @@ exports.register = (server, options, next) => {
                 status: (previous.performActions.status === 'failed') ? 'failed' : 'complete',
                 completedOn: new Date()
               };
-              collection.update({ _id: activity._id }, { $set: updatedActivity }, (updateActivityError) => {
-                if (updateActivityError) {
-                  server.log(['hapi-activities', 'error'], updateActivityError);
-                }
-                done();
-              });
+              collection.update({ _id: activity._id }, { $set: updatedActivity }, done);
             }]
           };
         },
@@ -124,7 +122,7 @@ exports.register = (server, options, next) => {
         added: new Date()
       }, (insertErr) => {
         if (insertErr) {
-          server.log(insertErr);
+          server.log(['hapi-activities', 'error'], insertErr);
         }
         if (settings.log) {
           server.log(['hapi-activities', 'new-activity', 'debug'], { message: `Registering a new activity: '${activityName}'`, data: activityData });
@@ -145,7 +143,10 @@ exports.register = (server, options, next) => {
       if (!continueProcessing) {
         return;
       }
-      updateActivities(() => {
+      updateActivities((err) => {
+        if (err) {
+          server.log(['hapi-activities', 'error'], err);
+        }
         if (continueProcessing) {
           setTimeout(timer, settings.interval);
         }
