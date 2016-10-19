@@ -112,7 +112,6 @@ exports.register = (server, options, next) => {
     server.method('activity', (activityName, activityData) => {
       // verify that this activity exists:
       if (!settings.activities[activityName]) {
-        server.log(['hapi-activities', 'error'], `Could not find an activity named ${activityName}`);
         return;
       }
       collection.insertOne({

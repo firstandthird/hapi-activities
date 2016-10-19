@@ -1,6 +1,6 @@
 # hapi-activities
 
-An 'activity' is a process that is added to a server by a server event, but which happens independently of that event. A separate process polls for new activities and handles processing and updating them.  
+An 'activity' is a process that is added to a server by a server event, but which happens independently of that event. A separate process polls for new activities and handles processing and updating them. Requires access to a mongo server to track activities.
 
 *__Use cases__*:
 - adding users or updating lists
@@ -18,17 +18,22 @@ install hapi-activities
 Example (where ```server``` is your initialized hapi server):
 
 ```js
-server.method('addUserObject', (data) => {
-  ABunchODBStuff(data);
-  console.log("added the user object");
+server.method('addUserObject', (data, callback) => {
+  ABunchODBStuff(data, (err, result) => {
+    if (!err) {
+      console.log("added the user object!");
+    }
+    return callback(err, result);
+  });
 });
-server.method('sendEmail', (data) => {
-  sendSomeEmail(data.email);
-  console.log("emailed the email to %s", data.email);
+server.method('sendEmail', (data, callback) => {
+  console.log("emailing an email to %s", data.email);
+  sendSomeEmail(data.email, callback);
 });
+
 server.method('bigLongCalculation', (data) => {
-  performBigLongCalculation(data.widgetNumber);
-  console.log("calculated the widget number")
+  console.log("calculating the widget number");
+  return callback(null, performBigLongCalculation(data.widgetNumber));
 });
 
 server.register({
@@ -37,9 +42,17 @@ server.register({
     interval: 30000, // checks for new activities to process every 3 seconds
     activities: {
       'create user': [
-        'bigLongCalculation',
+        // actions can just be the name of the server method to invoke:
         'addUserObject',
-        'sendEmail'
+        // actions can also be given default params:
+        {
+            method: 'sendEmail',
+            data: { smtpHost: 'http://www.smtp.com', smtpLogin: 'myLogin', smtpPassword: 'insecure1'}
+        }
+        {
+          method: 'bigLongCalculation',
+          data: { x: 42 }
+        }
       ]
     }
   }
@@ -53,9 +66,9 @@ server.register({
 
 Output may not appear until up to 3 seconds after the call to ```server.methods.activity```, it will look something like:
 ```sh
-emailed the email to superuser@example.com
+emailing an email to superuser@example.com
 added the user object
-calculated the widget number
+calculating the widget number
 ```
 
 Note that the server methods within an activity call are invoked in parallel, so the above example outputs could be printed in any order.  
