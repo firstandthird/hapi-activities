@@ -6,7 +6,7 @@ const automap = require('automap');
 const defaults = {
   mongo: {
     host: 'mongodb://localhost:27017',
-    collectionName: 'hapi-activities'
+    collectionName: 'hapi-hooks'
   },
   timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
   interval: 5 * 60 * 1000, // 5 minutes
@@ -23,10 +23,10 @@ exports.register = (server, options, next) => {
     // initialize the server object:
     const collection = db.collection(settings.mongo.collectionName);
 
-    // update all activities:
+    // update all hooks:
     const updateActivities = (allDone) => {
       automap(
-        // fetch all 'waiting' activities
+        // fetch all 'waiting' hooks
         (done) => {
           collection
           .find({ status: 'waiting' })
@@ -48,10 +48,10 @@ exports.register = (server, options, next) => {
             logActivity: (done) => {
               collection.update({ _id: activity._id }, { $set: { status: 'processing' } }, (err) => {
                 if (err) {
-                  server.log(['hapi-activities', 'error'], err);
+                  server.log(['hapi-hooks', 'error'], err);
                 }
                 if (settings.log) {
-                  server.log(['hapi-activities', 'starting-activity', 'debug'], { message: 'Processing underway for activity', data: activity });
+                  server.log(['hapi-hooks', 'starting-activity', 'debug'], { message: 'Processing underway for activity', data: activity });
                 }
                 done();
               });
@@ -62,7 +62,7 @@ exports.register = (server, options, next) => {
               const updatedActivity = {
                 results: []
               };
-              async.each(settings.activities[activity.activityName], (action, eachDone) => {
+              async.each(settings.hooks[activity.activityName], (action, eachDone) => {
                 let actionData = activity.activityData;
                 // merge any default parameters for this action:
                 if (typeof action === 'object') {
@@ -111,7 +111,7 @@ exports.register = (server, options, next) => {
     // register the 'activity' method with the server:
     server.method('activity', (activityName, activityData) => {
       // verify that this activity exists:
-      if (!settings.activities[activityName]) {
+      if (!settings.hooks[activityName]) {
         return;
       }
       collection.insertOne({
@@ -121,15 +121,15 @@ exports.register = (server, options, next) => {
         added: new Date()
       }, (insertErr) => {
         if (insertErr) {
-          server.log(['hapi-activities', 'error'], insertErr);
+          server.log(['hapi-hooks', 'error'], insertErr);
         }
         if (settings.log) {
-          server.log(['hapi-activities', 'new-activity', 'debug'], { message: `Registering a new activity: '${activityName}'`, data: activityData });
+          server.log(['hapi-hooks', 'new-activity', 'debug'], { message: `Registering a new activity: '${activityName}'`, data: activityData });
         }
       });
     });
 
-    // keep processing activities until the server.stop method is called
+    // keep processing hooks until the server.stop method is called
     let continueProcessing = true;
     server.ext({
       type: 'onPreStop',
@@ -144,7 +144,7 @@ exports.register = (server, options, next) => {
       }
       updateActivities((err) => {
         if (err) {
-          server.log(['hapi-activities', 'error'], err);
+          server.log(['hapi-hooks', 'error'], err);
         }
         if (continueProcessing) {
           setTimeout(timer, settings.interval);

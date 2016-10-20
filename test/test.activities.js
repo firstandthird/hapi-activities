@@ -10,19 +10,19 @@ let db;
 let collection;
 let hapiActivities;
 
-lab.experiment('hapi-activities', () => {
+lab.experiment('hapi-hooks', () => {
   lab.beforeEach((done) => {
     mongo.connect('mongodb://localhost:27017', (err, theDb) => {
       if (err) {
         console.log(err);
       }
       db = theDb;
-      collection = db.collection('hapi-activities-test');
+      collection = db.collection('hapi-hooks-test');
       collection.drop( () => {
         hapiActivities = require('../');
         server = new Hapi.Server({
           debug: {
-            log: ['hapi-activities', 'error']
+            log: ['hapi-hooks', 'error']
           }
         });
         server.connection({ port: 8080 });
@@ -58,10 +58,10 @@ lab.experiment('hapi-activities', () => {
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
-          collectionName: 'hapi-activities-test'
+          collectionName: 'hapi-hooks-test'
         },
         interval: 1000, // 1 second
-        activities: {
+        hooks: {
           'after school': [
             'kickball',
             'trumpet',
@@ -116,10 +116,10 @@ lab.experiment('hapi-activities', () => {
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
-          collectionName: 'hapi-activities-test'
+          collectionName: 'hapi-hooks-test'
         },
         interval: 500,
-        activities: {
+        hooks: {
           'before school': ['breakfast']
         }
       }
@@ -154,10 +154,10 @@ lab.experiment('hapi-activities', () => {
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
-          collectionName: 'hapi-activities-test'
+          collectionName: 'hapi-hooks-test'
         },
         interval: 500,
-        activities: {
+        hooks: {
           'during school': ['breakfast']
         }
       }
@@ -190,10 +190,10 @@ lab.experiment('hapi-activities', () => {
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
-          collectionName: 'hapi-activities-test'
+          collectionName: 'hapi-hooks-test'
         },
         interval: 1000, // 1 second
-        activities: {
+        hooks: {
           'models': [{
             method: 'airplanes',
             data: { data1: 'is data 1'}
@@ -225,10 +225,10 @@ lab.experiment('hapi-activities', () => {
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
-          collectionName: 'hapi-activities-test'
+          collectionName: 'hapi-hooks-test'
         },
         interval: 1000, // 1 second
-        activities: {} // no activities
+        hooks: {} // no hooks
       }
     }, (err) => {
       server.methods.activity('perpetual motion', {});
