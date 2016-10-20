@@ -1,6 +1,6 @@
-# hapi-activities
+# hapi-hooks
 
-An 'activity' is a process that is added to a server by a server event, but which happens independently of that event. A separate process polls for new activities and handles processing and updating them. Requires access to a mongo server to track activities.
+A 'hook' is a task that is spawned by a server event, but is performed independently of that event. This frees up the server to respond to requests and do other important work, while an independent process polls for new hooks and handles processing and updating them. This module requires access to a mongo server that is used to track the hooks.
 
 *__Use cases__*:
 - adding users or updating lists
@@ -10,9 +10,8 @@ An 'activity' is a process that is added to a server by a server event, but whic
 - long running processes
 - notification systems
 
-
 ```
-install hapi-activities
+install hapi-hooks
 ```
 
 Example (where ```server``` is your initialized hapi server):
@@ -37,10 +36,10 @@ server.method('bigLongCalculation', (data) => {
 });
 
 server.register({
-  register: require('hapi-activities'),
+  register: require('hapi-hooks'),
   options: {
-    interval: 30000, // checks for new activities to process every 3 seconds
-    activities: {
+    interval: 30000, // checks for new hooks to process every 3 seconds
+    hooks: {
       'create user': [
         // actions can just be the name of the server method to invoke:
         'addUserObject',
@@ -57,18 +56,18 @@ server.register({
     }
   }
 }, () => {
-  server.methods.activity('create user', {
+  server.methods.hook('create user', {
     email: 'superuser@example.com',
     widgetNumber: 152
   });
 });
 ```
 
-Output may not appear until up to 3 seconds after the call to ```server.methods.activity```, it will look something like:
+Output may not appear until up to 3 seconds after the call to ```server.methods.hook```, it will look something like:
 ```sh
 emailing an email to superuser@example.com
 added the user object
 calculating the widget number
 ```
 
-Note that the server methods within an activity call are invoked in parallel, so the above example outputs could be printed in any order.  
+Note that the server methods within an hook call are invoked in parallel, so the above example outputs could be printed in any order.  

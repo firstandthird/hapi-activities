@@ -24,7 +24,7 @@ exports.register = (server, options, next) => {
     const collection = db.collection(settings.mongo.collectionName);
 
     // update all hooks:
-    const updateActivities = (allDone) => {
+    const updateHooks = (allDone) => {
       automap(
         // fetch all 'waiting' hooks
         (done) => {
@@ -41,29 +41,29 @@ exports.register = (server, options, next) => {
             done(null, results);
           });
         },
-        // for each activity we just fetched, do the following process:
-        (activity) => {
+        // for each hook we just fetched, do the following process:
+        (hook) => {
           return {
             // log that it's underway:
-            logActivity: (done) => {
-              collection.update({ _id: activity._id }, { $set: { status: 'processing' } }, (err) => {
+            logHook: (done) => {
+              collection.update({ _id: hook._id }, { $set: { status: 'processing' } }, (err) => {
                 if (err) {
                   server.log(['hapi-hooks', 'error'], err);
                 }
                 if (settings.log) {
-                  server.log(['hapi-hooks', 'starting-activity', 'debug'], { message: 'Processing underway for activity', data: activity });
+                  server.log(['hapi-hooks', 'starting-hook', 'debug'], { message: 'Processing underway for hook', data: hook });
                 }
                 done();
               });
             },
             // execute the actions in parallel:
-            performActions: ['logActivity', (results, done) => {
-              // will launch the activity's actions in parallel:
-              const updatedActivity = {
+            performActions: ['logHook', (results, done) => {
+              // will launch the hook's actions in parallel:
+              const updateHook = {
                 results: []
               };
-              async.each(settings.hooks[activity.activityName], (action, eachDone) => {
-                let actionData = activity.activityData;
+              async.each(settings.hooks[hook.hookName], (action, eachDone) => {
+                let actionData = hook.hookData;
                 // merge any default parameters for this action:
                 if (typeof action === 'object') {
                   actionData = Object.assign(action.data, actionData);
@@ -76,47 +76,47 @@ exports.register = (server, options, next) => {
                   actionCall(actionData, (error, output) => {
                     // will log async's ETIMEDOUT error, as well as other errors for this action:
                     if (error) {
-                      updatedActivity.results.push({ action, error });
-                      updatedActivity.status = 'failed';
+                      updateHook.results.push({ action, error });
+                      updateHook.status = 'failed';
                     } else {
-                      updatedActivity.results.push({ action, output });
+                      updateHook.results.push({ action, output });
                     }
                     return eachDone();
                   });
                 } catch (e) {
-                  updatedActivity.results.push({ action, error: `${e.name} ${e.message} ` });
-                  updatedActivity.status = 'failed';
+                  updateHook.results.push({ action, error: `${e.name} ${e.message} ` });
+                  updateHook.status = 'failed';
                   eachDone();
                 }
               }, () => {
-                // when we have the results from all actions, we're ready to update the activity:
-                done(null, updatedActivity);
+                // when we have the results from all actions, we're ready to update the hook:
+                done(null, updateHook);
               });
             }],
-            // update the activity with the results of processing the actions:
-            completeActivity: ['performActions', (previous, done) => {
-              const updatedActivity = {
+            // update the hook with the results of processing the actions:
+            completeHook: ['performActions', (previous, done) => {
+              const updateHook = {
                 results: previous.performActions.results,
-                // if any of the actions 'failed' then the activity status is 'failed':
+                // if any of the actions 'failed' then the hook status is 'failed':
                 status: (previous.performActions.status === 'failed') ? 'failed' : 'complete',
                 completedOn: new Date()
               };
-              collection.update({ _id: activity._id }, { $set: updatedActivity }, done);
+              collection.update({ _id: hook._id }, { $set: updateHook }, done);
             }]
           };
         },
       allDone);
     };
 
-    // register the 'activity' method with the server:
-    server.method('activity', (activityName, activityData) => {
-      // verify that this activity exists:
-      if (!settings.hooks[activityName]) {
+    // register the 'hook' method with the server:
+    server.method('hook', (hookName, hookData) => {
+      // verify that this hook exists:
+      if (!settings.hooks[hookName]) {
         return;
       }
       collection.insertOne({
-        activityName,
-        activityData,
+        hookName,
+        hookData,
         status: 'waiting',
         added: new Date()
       }, (insertErr) => {
@@ -124,7 +124,7 @@ exports.register = (server, options, next) => {
           server.log(['hapi-hooks', 'error'], insertErr);
         }
         if (settings.log) {
-          server.log(['hapi-hooks', 'new-activity', 'debug'], { message: `Registering a new activity: '${activityName}'`, data: activityData });
+          server.log(['hapi-hooks', 'new-hook', 'debug'], { message: `Registering a new hook: '${hookName}'`, data: hookData });
         }
       });
     });
@@ -142,7 +142,7 @@ exports.register = (server, options, next) => {
       if (!continueProcessing) {
         return;
       }
-      updateActivities((err) => {
+      updateHooks((err) => {
         if (err) {
           server.log(['hapi-hooks', 'error'], err);
         }

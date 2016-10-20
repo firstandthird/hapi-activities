@@ -8,7 +8,7 @@ const mongo = require('mongodb');
 let server;
 let db;
 let collection;
-let hapiActivities;
+let hapiHooks;
 
 lab.experiment('hapi-hooks', () => {
   lab.beforeEach((done) => {
@@ -19,7 +19,7 @@ lab.experiment('hapi-hooks', () => {
       db = theDb;
       collection = db.collection('hapi-hooks-test');
       collection.drop( () => {
-        hapiActivities = require('../');
+        hapiHooks = require('../');
         server = new Hapi.Server({
           debug: {
             log: ['hapi-hooks', 'error']
@@ -35,7 +35,7 @@ lab.experiment('hapi-hooks', () => {
     server.stop(done);
   });
 
-  lab.test('adds a server method that will process an activity composed of actions', { timeout: 10000 }, (done) => {
+  lab.test('adds a server method that will process an hook composed of actions', { timeout: 10000 }, (done) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -54,7 +54,7 @@ lab.experiment('hapi-hooks', () => {
       callback(null, numberOfCalls.pottery);
     });
     server.register({
-      register: hapiActivities,
+      register: hapiHooks,
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
@@ -73,7 +73,7 @@ lab.experiment('hapi-hooks', () => {
       if (err) {
         console.log(err);
       }
-      server.methods.activity('after school', {
+      server.methods.hook('after school', {
         name: 'bob',
         age: 7
       });
@@ -81,10 +81,10 @@ lab.experiment('hapi-hooks', () => {
         code.expect(numberOfCalls.kickball).to.equal(1);
         code.expect(numberOfCalls.trumpet).to.equal(7);
         code.expect(numberOfCalls.pottery).to.equal(1);
-        collection.findOne({}, (err, activity) => {
-          code.expect(activity.status).to.equal('complete');
-          code.expect(activity.results.length).to.equal(3);
-          server.methods.activity('after school', {
+        collection.findOne({}, (err, hook) => {
+          code.expect(hook.status).to.equal('complete');
+          code.expect(hook.results.length).to.equal(3);
+          server.methods.hook('after school', {
             name: 'sven',
             age: 5
           });
@@ -92,9 +92,9 @@ lab.experiment('hapi-hooks', () => {
             code.expect(numberOfCalls.kickball).to.equal(2);
             code.expect(numberOfCalls.trumpet).to.equal(5);
             code.expect(numberOfCalls.pottery).to.equal(2);
-            collection.findOne({}, (err, activity2) => {
-              code.expect(activity2.status).to.equal('complete');
-              code.expect(activity2.results.length).to.equal(3);
+            collection.findOne({}, (err, hook2) => {
+              code.expect(hook2.status).to.equal('complete');
+              code.expect(hook2.results.length).to.equal(3);
               done();
             });
           }, 2500);
@@ -112,7 +112,7 @@ lab.experiment('hapi-hooks', () => {
       return callback('I am an error');
     });
     server.register({
-      register: hapiActivities,
+      register: hapiHooks,
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
@@ -124,17 +124,17 @@ lab.experiment('hapi-hooks', () => {
         }
       }
     }, (err) => {
-      server.methods.activity('before school', {
+      server.methods.hook('before school', {
         name: 'sven',
         age: 5
       });
       setTimeout(() => {
         code.expect(numberOfCalls.breakfast).to.equal(1);
         // check the db object:
-        collection.findOne({}, (err, activity) => {
-          code.expect(activity.status).to.equal('failed');
-          code.expect(activity.results.length).to.equal(1);
-          code.expect(activity.results[0].error).to.equal('I am an error');
+        collection.findOne({}, (err, hook) => {
+          code.expect(hook.status).to.equal('failed');
+          code.expect(hook.results.length).to.equal(1);
+          code.expect(hook.results[0].error).to.equal('I am an error');
           done();
         });
       }, 3000);
@@ -150,7 +150,7 @@ lab.experiment('hapi-hooks', () => {
       return not.a.thing();
     });
     server.register({
-      register: hapiActivities,
+      register: hapiHooks,
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
@@ -162,17 +162,17 @@ lab.experiment('hapi-hooks', () => {
         }
       }
     }, (err) => {
-      server.methods.activity('during school', {
+      server.methods.hook('during school', {
         name: 'sven',
         age: 5
       });
       setTimeout(() => {
         code.expect(numberOfCalls.breakfast).to.equal(1);
         // check the db object:
-        collection.findOne({ activityName: 'during school' }, (err, activity) => {
-          code.expect(activity.status).to.equal('failed');
-          code.expect(activity.results.length).to.equal(1);
-          code.expect(activity.results[0].error).to.include('not is not defined');
+        collection.findOne({ hookName: 'during school' }, (err, hook) => {
+          code.expect(hook.status).to.equal('failed');
+          code.expect(hook.results.length).to.equal(1);
+          code.expect(hook.results[0].error).to.include('not is not defined');
           done();
         });
       }, 3000);
@@ -186,7 +186,7 @@ lab.experiment('hapi-hooks', () => {
       callback(null, passedData);
     });
     server.register({
-      register: hapiActivities,
+      register: hapiHooks,
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
@@ -204,13 +204,13 @@ lab.experiment('hapi-hooks', () => {
       if (err) {
         console.log(err);
       }
-      server.methods.activity('models', { data2: 'is data 2' });
+      server.methods.hook('models', { data2: 'is data 2' });
       setTimeout(() => {
         code.expect(passedData.data1).to.equal('is data 1');
         code.expect(passedData.data2).to.equal('is data 2');
         // you can still over-ride the defaults:
         passedData = null;
-        server.methods.activity('models', { data1: 'is data 2' });
+        server.methods.hook('models', { data1: 'is data 2' });
         setTimeout(() => {
           code.expect(passedData.data1).to.equal('is data 2');
           done();
@@ -219,9 +219,9 @@ lab.experiment('hapi-hooks', () => {
     });
   });
 
-  lab.test('will not add an activity if it does not exist', { timeout: 10000 }, (done) => {
+  lab.test('will not add an hook if it does not exist', { timeout: 10000 }, (done) => {
     server.register({
-      register: hapiActivities,
+      register: hapiHooks,
       options: {
         mongo: {
           host: 'mongodb://localhost:27017',
@@ -231,7 +231,7 @@ lab.experiment('hapi-hooks', () => {
         hooks: {} // no hooks
       }
     }, (err) => {
-      server.methods.activity('perpetual motion', {});
+      server.methods.hook('perpetual motion', {});
       setTimeout(() => {
         done();
       }, 2500);
