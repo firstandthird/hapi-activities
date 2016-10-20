@@ -108,8 +108,7 @@ exports.register = (server, options, next) => {
       allDone);
     };
 
-    // register the 'hook' method with the server:
-    server.method('hook', (hookName, hookData) => {
+    const hook = (hookName, hookData) => {
       // verify that this hook exists:
       if (!settings.hooks[hookName]) {
         return;
@@ -127,7 +126,14 @@ exports.register = (server, options, next) => {
           server.log(['hapi-hooks', 'new-hook', 'debug'], { message: `Registering a new hook: '${hookName}'`, data: hookData });
         }
       });
-    });
+    };
+
+    // register the 'hook' method with the server:
+    if (options.decorate) {
+      server.decorate('server', 'hook', hook);
+    } else {
+      server.method('hook', hook);
+    }
 
     // keep processing hooks until the server.stop method is called
     let continueProcessing = true;
