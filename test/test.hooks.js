@@ -103,6 +103,58 @@ lab.experiment('hapi-hooks', () => {
     });
   });
 
+  lab.test('"decorate" option will register the method with "server.decorate" instead of "server.method"', { timeout: 7000 }, (done) => {
+    const numberOfCalls = {
+      kickball: 0,
+      trumpet: 0,
+      pottery: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback(null, numberOfCalls.kickball);
+    });
+    server.method('trumpet', (data, callback) => {
+      numberOfCalls.trumpet = data.age;
+      callback(null, numberOfCalls.trumpet);
+    });
+    server.method('pottery', (data, callback) => {
+      numberOfCalls.pottery ++;
+      callback(null, numberOfCalls.pottery);
+    });
+    server.register({
+      register: hapiHooks,
+      options: {
+        decorate: true,
+        mongo: {
+          host: 'mongodb://localhost:27017',
+          collectionName: 'hapi-hooks-test'
+        },
+        interval: 1000, // 1 second
+        hooks: {
+          'after school': [
+            'kickball',
+            'trumpet',
+            'pottery',
+          ]
+        }
+      }
+    }, (err) => {
+      if (err) {
+        console.log(err);
+      }
+      server.hook('after school', {
+        name: 'bob',
+        age: 7
+      });
+      setTimeout(() => {
+        code.expect(numberOfCalls.kickball).to.equal(1);
+        code.expect(numberOfCalls.trumpet).to.equal(7);
+        code.expect(numberOfCalls.pottery).to.equal(1);
+        done();
+      }, 2500);
+    });
+  });
+
   lab.test('can handle and report callback errors during an action', { timeout: 8000 }, (done) => {
     const numberOfCalls = {
       breakfast: 0
