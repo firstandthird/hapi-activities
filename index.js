@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 'use strict';
 const mongo = require('mongodb');
 const async = require('async');
@@ -16,9 +17,9 @@ const defaults = {
 exports.register = (server, options, next) => {
   const settings = Object.assign({}, defaults, options);
   // connect to db:
-  mongo.connect(settings.mongo.host, (err, db) => {
-    if (err) {
-      return next(err);
+  mongo.connect(settings.mongo.host, (connErr, db) => {
+    if (connErr) {
+      return next(connErr);
     }
     // initialize the server object:
     const collection = db.collection(settings.mongo.collectionName);
