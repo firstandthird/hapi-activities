@@ -103,10 +103,21 @@ exports.register = (server, options, next) => {
                 completedOn: new Date()
               };
               collection.update({ _id: hook._id }, { $set: updateHook }, done);
+            }],
+            logComplete: ['completeHook', (results, done) => {
+              if (settings.log) {
+                server.log(['hapi-hooks', 'complete', 'debug'], {
+                  message: 'Hook complete',
+                  status: results.performActions.status,
+                  hook
+                });
+              }
+              done();
             }]
           };
         },
-      allDone);
+        (hook, results) => results,
+        allDone);
     };
 
     const hook = (hookName, hookData) => {
