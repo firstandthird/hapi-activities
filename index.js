@@ -3,6 +3,7 @@
 const mongo = require('mongodb');
 const async = require('async');
 const automap = require('automap');
+const get = require('lodash.get');
 
 const defaults = {
   mongo: {
@@ -71,7 +72,7 @@ exports.register = (server, options, next) => {
                   action = action.method;
                 }
                 // if a timeout is specified then put a timeout wrapper around the server method call:
-                const actionCall = settings.timeout ? async.timeout(server.methods[action], settings.timeout) : server.methods[action];
+                const actionCall = settings.timeout ? async.timeout(get(server.methods, action), settings.timeout) : get(server.methods, action);
                 // now make the call:
                 try {
                   actionCall(actionData, (error, output) => {
@@ -170,7 +171,6 @@ exports.register = (server, options, next) => {
       });
     };
     timer();
-
     // now tell hapi that we're done registering the plugin!
     next();
   });

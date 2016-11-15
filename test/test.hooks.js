@@ -14,11 +14,11 @@ lab.experiment('hapi-hooks', () => {
   lab.beforeEach((done) => {
     mongo.connect('mongodb://localhost:27017', (err, theDb) => {
       if (err) {
-        console.log(err);
+        throw err;
       }
       db = theDb;
       collection = db.collection('hapi-hooks-test');
-      collection.drop( () => {
+      collection.drop(() => {
         hapiHooks = require('../');
         server = new Hapi.Server({
           debug: {
@@ -103,6 +103,36 @@ lab.experiment('hapi-hooks', () => {
     });
   });
 
+  lab.test('supports foo.bar for methods', { timeout: 5000 }, (done) => {
+    let numberOfCalls = 0;
+    server.method('foo.bar', (data, callback) => {
+      numberOfCalls ++;
+      callback();
+    });
+    server.register({
+      register: hapiHooks,
+      options: {
+        mongo: {
+          host: 'mongodb://localhost:27017',
+          collectionName: 'hapi-hooks-test'
+        },
+        interval: 100, // 1 second
+        hooks: {
+          'after school': ['foo.bar']
+        }
+      }
+    }, () => {
+      server.methods.hook('after school', {
+        name: 'bob',
+        age: 7
+      });
+      setTimeout(() => {
+        code.expect(numberOfCalls).to.equal(1);
+        done();
+      }, 2500);
+    });
+  });
+
   lab.test('"decorate" option will register the method with "server.decorate" instead of "server.method"', { timeout: 7000 }, (done) => {
     const numberOfCalls = {
       kickball: 0,
@@ -140,7 +170,7 @@ lab.experiment('hapi-hooks', () => {
       }
     }, (err) => {
       if (err) {
-        console.log(err);
+        throw err;
       }
       server.hook('after school', {
         name: 'bob',
@@ -176,6 +206,9 @@ lab.experiment('hapi-hooks', () => {
         }
       }
     }, (err) => {
+      if (err) {
+        throw err;
+      }
       server.methods.hook('before school', {
         name: 'sven',
         age: 5
@@ -183,7 +216,7 @@ lab.experiment('hapi-hooks', () => {
       setTimeout(() => {
         code.expect(numberOfCalls.breakfast).to.equal(1);
         // check the db object:
-        collection.findOne({}, (err, hook) => {
+        collection.findOne({}, (err2, hook) => {
           code.expect(hook.status).to.equal('failed');
           code.expect(hook.results.length).to.equal(1);
           code.expect(hook.results[0].error).to.equal('I am an error');
@@ -214,6 +247,9 @@ lab.experiment('hapi-hooks', () => {
         }
       }
     }, (err) => {
+      if (err) {
+        throw err;
+      }
       server.methods.hook('during school', {
         name: 'sven',
         age: 5
@@ -221,7 +257,10 @@ lab.experiment('hapi-hooks', () => {
       setTimeout(() => {
         code.expect(numberOfCalls.breakfast).to.equal(1);
         // check the db object:
-        collection.findOne({ hookName: 'during school' }, (err, hook) => {
+        collection.findOne({ hookName: 'during school' }, (err2, hook) => {
+          if (err2) {
+            throw err2;
+          }
           code.expect(hook.status).to.equal('failed');
           code.expect(hook.results.length).to.equal(1);
           code.expect(hook.results[0].error).to.include('not is not defined');
@@ -246,15 +285,15 @@ lab.experiment('hapi-hooks', () => {
         },
         interval: 1000, // 1 second
         hooks: {
-          'models': [{
+          models: [{
             method: 'airplanes',
-            data: { data1: 'is data 1'}
+            data: { data1: 'is data 1' }
           }]
         }
       }
     }, (err) => {
       if (err) {
-        console.log(err);
+        throw err;
       }
       server.methods.hook('models', { data2: 'is data 2' });
       setTimeout(() => {
@@ -283,6 +322,9 @@ lab.experiment('hapi-hooks', () => {
         hooks: {} // no hooks
       }
     }, (err) => {
+      if (err) {
+        throw err;
+      }
       server.methods.hook('perpetual motion', {});
       setTimeout(() => {
         done();
