@@ -103,8 +103,7 @@ exports.register = (server, options, next) => {
                 status: (previous.performActions.status === 'failed') ? 'failed' : 'complete',
                 completedOn: new Date()
               };
-              console.log('connecting')
-              collection.update({ _id: hook._id }, { $set: updateHook }, done);
+                collection.update({ _id: hook._id }, { $set: updateHook }, done);
             }],
             logComplete: ['completeHook', (results, done) => {
               if (settings.log) {
