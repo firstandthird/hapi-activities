@@ -73,23 +73,32 @@ exports.register = (server, options, next) => {
                 }
                 // if a timeout is specified then put a timeout wrapper around the server method call:
                 const actionCall = settings.timeout ? async.timeout(get(server.methods, action), settings.timeout) : get(server.methods, action);
-                // now make the call:
-                try {
-                  actionCall(actionData, (error, output) => {
-                    // will log async's ETIMEDOUT error, as well as other errors for this action:
-                    if (error) {
-                      updateHook.results.push({ action, error });
-                      updateHook.status = 'failed';
-                    } else {
-                      updateHook.results.push({ action, output });
-                    }
-                    return eachDone();
-                  });
-                } catch (e) {
+                const d = require('domain').create();
+                d.on('error', (e) => {
+                  // any error that occurs in this domain was thrown by actionCall:
                   updateHook.results.push({ action, error: `${e.name} ${e.message} ` });
                   updateHook.status = 'failed';
                   eachDone();
-                }
+                });
+                d.run(() => {
+                  // now make the call:
+                  try {
+                    actionCall(actionData, (error, output) => {
+                      // will log async's ETIMEDOUT error, as well as other errors for this action:
+                      if (error) {
+                        updateHook.results.push({ action, error });
+                        updateHook.status = 'failed';
+                      } else {
+                        updateHook.results.push({ action, output });
+                      }
+                      return eachDone();
+                    });
+                  } catch (e) {
+                    updateHook.results.push({ action, error: `${e.name} ${e.message} ` });
+                    updateHook.status = 'failed';
+                    eachDone();
+                  }
+                });
               }, () => {
                 // when we have the results from all actions, we're ready to update the hook:
                 done(null, updateHook);
