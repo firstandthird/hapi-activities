@@ -59,7 +59,7 @@ exports.register = (server, options, next) => {
               });
             },
             // execute the actions in parallel:
-            performActions: ['logHook', (results, done) => {
+            performActions: (logHook, done) => {
               // will launch the hook's actions in parallel:
               const updateHook = {
                 results: []
@@ -94,27 +94,27 @@ exports.register = (server, options, next) => {
                 // when we have the results from all actions, we're ready to update the hook:
                 done(null, updateHook);
               });
-            }],
+            },
             // update the hook with the results of processing the actions:
-            completeHook: ['performActions', (previous, done) => {
+            completeHook: (performActions, done) => {
               const updateHook = {
-                results: previous.performActions.results,
+                results: performActions.results,
                 // if any of the actions 'failed' then the hook status is 'failed':
-                status: (previous.performActions.status === 'failed') ? 'failed' : 'complete',
+                status: (performActions.status === 'failed') ? 'failed' : 'complete',
                 completedOn: new Date()
               };
               collection.update({ _id: hook._id }, { $set: updateHook }, done);
-            }],
-            logComplete: ['completeHook', (results, done) => {
+            },
+            logComplete: (performActions, completeHook, done) => {
               if (settings.log) {
                 server.log(['hapi-hooks', 'complete', 'debug'], {
                   message: 'Hook complete',
-                  status: results.performActions.status,
+                  status: performActions.status,
                   hook
                 });
               }
               done();
-            }]
+            }
           };
         },
         (hook, results) => results,
