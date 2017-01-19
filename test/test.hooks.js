@@ -264,6 +264,7 @@ lab.experiment('hapi-hooks', () => {
           if (err2) {
             throw err2;
           }
+          console.log(hook);
           code.expect(hook.status).to.equal('failed');
           code.expect(hook.results.length).to.equal(1);
           code.expect(hook.results[0].error).to.include('not is not defined');
@@ -279,7 +280,8 @@ lab.experiment('hapi-hooks', () => {
     };
     server.method('breakfast', (data, callback) => {
       numberOfCalls.breakfast ++;
-      return not.a.thing();
+      not.a.thing();
+      callback(null, numberOfCalls);
     });
     server.register({
       register: hapiHooks,
@@ -310,7 +312,7 @@ lab.experiment('hapi-hooks', () => {
           }
           code.expect(hook.status).to.equal('failed');
           code.expect(hook.results.length).to.equal(1);
-          code.expect(hook.results[0].error).to.include('not is not defined');
+          code.expect(hook.results[0].error).to.include('is not defined');
           done();
         });
       }, 3000);
