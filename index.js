@@ -27,6 +27,9 @@ exports.register = (server, options, next) => {
 
     // update all hooks:
     const updateHooks = (allDone) => {
+      const thisRandom = Math.floor(Math.random() * 10000);
+      server.log(['hapi-hooks'], `Updating hooks for call ${thisRandom}`);
+      
       automap(
         // fetch all 'waiting' hooks
         (done) => {
@@ -38,6 +41,7 @@ exports.register = (server, options, next) => {
             }
             // can go back to sleep if nothing was found:
             if (results.length === 0) {
+              server.log(['hapi-hooks'], `Found 0 results for call ${thisRandom}`);
               return allDone();
             }
             done(null, results);
@@ -73,23 +77,37 @@ exports.register = (server, options, next) => {
                 }
                 // if a timeout is specified then put a timeout wrapper around the server method call:
                 const actionCall = settings.timeout ? async.timeout(get(server.methods, action), settings.timeout) : get(server.methods, action);
-                // now make the call:
-                try {
-                  actionCall(actionData, (error, output) => {
-                    // will log async's ETIMEDOUT error, as well as other errors for this action:
-                    if (error) {
-                      updateHook.results.push({ action, error });
-                      updateHook.status = 'failed';
-                    } else {
-                      updateHook.results.push({ action, output });
-                    }
-                    return eachDone();
-                  });
-                } catch (e) {
+                const d = require('domain').create();
+                d.on('error', (e) => {
+                  // any error that occurs in this domain was thrown by actionCall:
                   updateHook.results.push({ action, error: `${e.name} ${e.message} ` });
                   updateHook.status = 'failed';
+                  server.log(['hapi-hooks'], `Hook failed (in error) for run ${thisRandom}`);
                   eachDone();
-                }
+                });
+                d.run(() => {
+                  // now make the call:
+                  try {
+                    actionCall(actionData, (error, output) => {
+                      server.log(['hapi-hooks'],`actionCall for run ${thisRandom}`);
+                      // will log async's ETIMEDOUT error, as well as other errors for this action:
+                      if (error) {
+                        updateHook.results.push({ action, error });
+                        updateHook.status = 'failed';
+                      } else {
+                        updateHook.results.push({ action, output });
+                      }
+                      server.log(['hapi-hooks'], `Hook complete for run ${thisRandom}`);
+                      eachDone();
+                    });
+                    return;
+                  } catch (e) {
+                    updateHook.results.push({ action, error: `${e.name} ${e.message} ` });
+                    updateHook.status = 'failed';
+                    server.log(['hapi-hooks'], `Hook failed for run ${thisRandom}`);
+                    return eachDone();
+                  }
+                });
               }, () => {
                 // when we have the results from all actions, we're ready to update the hook:
                 done(null, updateHook);

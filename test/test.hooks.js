@@ -226,13 +226,62 @@ lab.experiment('hapi-hooks', () => {
     });
   });
 
-  lab.test('can handle and report server errors during an action', { timeout: 8000 }, (done) => {
+  lab.test('can handle and report server errors thrown asynchronously ', { timeout: 12000 }, (done) => {
     const numberOfCalls = {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
       numberOfCalls.breakfast ++;
-      return not.a.thing();
+      // make sure error is thrown after try/catch block: ?
+      setTimeout(() => {
+        return not.a.thing();
+      }, 500);
+    });
+    server.register({
+      register: hapiHooks,
+      options: {
+        mongo: {
+          host: 'mongodb://localhost:27017',
+          collectionName: 'hapi-hooks-test'
+        },
+        interval: 500,
+        hooks: {
+          'during school': ['breakfast']
+        }
+      }
+    }, (err) => {
+      if (err) {
+        throw err;
+      }
+      server.methods.hook('during school', {
+        name: 'sven',
+        age: 5
+      });
+      setTimeout(() => {
+        code.expect(numberOfCalls.breakfast).to.equal(1);
+        // check the db object:
+        collection.findOne({ hookName: 'during school' }, (err2, hook) => {
+          if (err2) {
+            throw err2;
+          }
+          console.log(hook);
+          code.expect(hook.status).to.equal('failed');
+          code.expect(hook.results.length).to.equal(1);
+          code.expect(hook.results[0].error).to.include('not is not defined');
+          done();
+        });
+      }, 3000);
+    });
+  });
+
+  lab.test('can handle and report server errors during an action', { timeout: 12000 }, (done) => {
+    const numberOfCalls = {
+      breakfast: 0
+    };
+    server.method('breakfast', (data, callback) => {
+      numberOfCalls.breakfast ++;
+      not.a.thing();
+      callback(null, numberOfCalls);
     });
     server.register({
       register: hapiHooks,
@@ -263,7 +312,7 @@ lab.experiment('hapi-hooks', () => {
           }
           code.expect(hook.status).to.equal('failed');
           code.expect(hook.results.length).to.equal(1);
-          code.expect(hook.results[0].error).to.include('not is not defined');
+          code.expect(hook.results[0].error).to.include('is not defined');
           done();
         });
       }, 3000);
@@ -331,4 +380,5 @@ lab.experiment('hapi-hooks', () => {
       }, 2500);
     });
   });
+
 });
