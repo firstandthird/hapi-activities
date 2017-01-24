@@ -17,7 +17,7 @@
     "async": "^2.1.1",
     "automap": "^0.2.0",
     "lodash.get": "^4.4.2",
-    "mongodb": "^2.2.10"
+    "mongodb": "^2.2.22"
   },
   "devDependencies": {
     "code": "^4.0.0",
