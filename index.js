@@ -68,6 +68,9 @@ exports.register = (server, options, next) => {
                 let actionData = hook.hookData;
                 // merge any default parameters for this action:
                 if (typeof action === 'object') {
+                  if (!action.data) {
+                    action.data = {};
+                  }
                   actionData = Object.assign(action.data, actionData);
                   action = action.method;
                 }
