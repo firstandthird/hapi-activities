@@ -1,82 +1,42 @@
 'use strict';
-const Hapi = require('hapi');
-const mongo = require('mongodb');
-const tape = require('tape');
-const tapeExtras = require('tape-extras');
+const setup = require('./setup.js');
+const test = require('tape');
 
-const test = tapeExtras(tape, {
-  beforeEach(done) {
-    let server;
-    let db;
-    let collection;
-    let hapiHooks;
-    mongo.connect('mongodb://localhost:27017', (err, theDb) => {
-      if (err) {
-        throw err;
-      }
-      db = theDb;
-      collection = db.collection('hapi-hooks-test');
-      collection.drop(() => {
-        hapiHooks = require('../');
-        server = new Hapi.Server({
-          debug: {
-            log: ['hapi-hooks', 'error']
-          }
-        });
-        server.connection({ port: 8080 });
-        done(null, server, db, collection, hapiHooks);
-      });
+test('adds a server method that will process an hook composed of actions', (t) => {
+  console.log('start fiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiirst')
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000, // 1 second
+    hooks: {
+      'after school': [
+        'kickball',
+        'trumpet',
+        'pottery',
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const numberOfCalls = {
+      kickball: 0,
+      trumpet: 0,
+      pottery: 0
+    };
+    server.method('kickball', (data, callback) => {
+      console.log('this is the kickball')
+      console.log(numberOfCalls.kickball)
+      numberOfCalls.kickball ++;
+      callback(null, numberOfCalls.kickball);
     });
-  },
-  after(params, done) {
-    params[2].drop();
-    done();
-  }
-});
-
-test('adds a server method that will process an hook composed of actions', (t, fixtures) => {
-  const server = fixtures[0];
-  const collection = fixtures[2];
-  const hapiHooks = fixtures[3];
-  const numberOfCalls = {
-    kickball: 0,
-    trumpet: 0,
-    pottery: 0
-  };
-  server.method('kickball', (data, callback) => {
-    console.log('this is the kickball')
-    console.log(numberOfCalls.kickball)
-    numberOfCalls.kickball ++;
-    callback(null, numberOfCalls.kickball);
-  });
-  server.method('trumpet', (data, callback) => {
-    numberOfCalls.trumpet = data.age;
-    callback(null, numberOfCalls.trumpet);
-  });
-  server.method('pottery', (data, callback) => {
-    numberOfCalls.pottery ++;
-    callback(null, numberOfCalls.pottery);
-  });
-  server.register({
-    register: hapiHooks,
-    options: {
-      mongo: {
-        host: 'mongodb://localhost:27017',
-        collectionName: 'hapi-hooks-test'
-      },
-      interval: 1000, // 1 second
-      hooks: {
-        'after school': [
-          'kickball',
-          'trumpet',
-          'pottery',
-        ]
-      }
-    }
-  }, (err) => {
-    if (err) {
-      console.log(err);
-    }
+    server.method('trumpet', (data, callback) => {
+      numberOfCalls.trumpet = data.age;
+      callback(null, numberOfCalls.trumpet);
+    });
+    server.method('pottery', (data, callback) => {
+      numberOfCalls.pottery ++;
+      callback(null, numberOfCalls.pottery);
+    });
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
@@ -99,8 +59,70 @@ test('adds a server method that will process an hook composed of actions', (t, f
           collection.findOne({}, (err, hook2) => {
             t.equal(hook2.status, 'complete');
             t.equal(hook2.results.length, 3);
-            collection.drop();
-            t.end();
+            cleanup(t);
+          });
+        }, 2500);
+      });
+    }, 2500);
+  });
+});
+
+test('adds a server method that will process an hook composed of actions', (t, fixtures) => {
+  console.log('starting second 2222222222222222222222222222222222222222222222222222222222222222222222222222222222222')
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000, // 1 second
+    hooks: {
+      'after school': [
+        'kickball',
+        'trumpet',
+        'pottery',
+      ]
+    }
+  }, (cleanup, server, collection) => {
+    const numberOfCalls = {
+      kickball: 0,
+      trumpet: 0,
+      pottery: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback(null, numberOfCalls.kickball);
+    });
+    server.method('trumpet', (data, callback) => {
+      numberOfCalls.trumpet = data.age;
+      callback(null, numberOfCalls.trumpet);
+    });
+    server.method('pottery', (data, callback) => {
+      numberOfCalls.pottery ++;
+      callback(null, numberOfCalls.pottery);
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    });
+    setTimeout(() => {
+      t.equal(numberOfCalls.kickball, 1);
+      t.equal(numberOfCalls.trumpet, 7);
+      t.equal(numberOfCalls.pottery, 1);
+      collection.findOne({}, (err, hook) => {
+        t.equal(hook.status, 'complete');
+        t.equal(hook.results.length, 3);
+        server.methods.hook('after school', {
+          name: 'sven',
+          age: 5
+        });
+        setTimeout(() => {
+          t.equal(numberOfCalls.kickball, 2);
+          t.equal(numberOfCalls.trumpet, 5);
+          t.equal(numberOfCalls.pottery, 2);
+          collection.findOne({}, (err, hook2) => {
+            t.equal(hook2.status, 'complete');
+            t.equal(hook2.results.length, 3);
+            cleanup(t, process.exit);
           });
         }, 2500);
       });
@@ -108,78 +130,6 @@ test('adds a server method that will process an hook composed of actions', (t, f
   });
 });
 /*
-
-test('adds a server method that will process an hook composed of actions', (t, fixtures) => {
-  const server = fixtures[0];
-  const collection = fixtures[2];
-  const hapiHooks = fixtures[3];
-  const numberOfCalls = {
-    kickball: 0,
-    trumpet: 0,
-    pottery: 0
-  };
-  server.method('kickball', (data, callback) => {
-    numberOfCalls.kickball ++;
-    callback(null, numberOfCalls.kickball);
-  });
-  server.method('trumpet', (data, callback) => {
-    numberOfCalls.trumpet = data.age;
-    callback(null, numberOfCalls.trumpet);
-  });
-  server.method('pottery', (data, callback) => {
-    numberOfCalls.pottery ++;
-    callback(null, numberOfCalls.pottery);
-  });
-  server.register({
-    register: hapiHooks,
-    options: {
-      mongo: {
-        host: 'mongodb://localhost:27017',
-        collectionName: 'hapi-hooks-test'
-      },
-      interval: 1000, // 1 second
-      hooks: {
-        'after school': [
-          'kickball',
-          'trumpet',
-          'pottery',
-        ]
-      }
-    }
-  }, (err) => {
-    if (err) {
-      console.log(err);
-    }
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1);
-      t.equal(numberOfCalls.trumpet, 7);
-      t.equal(numberOfCalls.pottery, 1);
-      collection.findOne({}, (err, hook) => {
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
-        server.methods.hook('after school', {
-          name: 'sven',
-          age: 5
-        });
-        setTimeout(() => {
-          t.equal(numberOfCalls.kickball, 2);
-          t.equal(numberOfCalls.trumpet, 5);
-          t.equal(numberOfCalls.pottery, 2);
-          collection.findOne({}, (err, hook2) => {
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
-            t.end();
-          });
-        }, 2500);
-      });
-    }, 2500);
-  });
-});
-
 test('supports foo.bar for methods', (t, fixtures) => {
   const server = fixtures[0];
   const db = fixtures[1];
@@ -413,24 +363,14 @@ test('handles actions passed in a { method s: <method>, data: <data> } form', (t
 });
 
 test('will not add an hook if it does not exist', (t, fixtures) => {
-  const server = fixtures[0];
-  const db = fixtures[1];
-  const collection = fixtures[2];
-  const hapiHooks = fixtures[3];
-  server.register({
-    register: hapiHooks,
-    options: {
-      mongo: {
-        host: 'mongodb://localhost:27017',
-        collectionName: 'hapi-hooks-test'
-      },
-      interval: 1000, // 1 second
-      hooks: {} // no hooks
-    }
-  }, (err) => {
-    if (err) {
-      throw err;
-    }
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000, // 1 second
+    hooks: {} // no hooks
+  }, (server) => {
     server.methods.hook('perpetual motion', {});
     setTimeout(() => {
       t.end();
