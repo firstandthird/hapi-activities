@@ -4,7 +4,7 @@
   "description": "Hapi plugin for doing deferred processes",
   "main": "index.js",
   "scripts": {
-    "test": "lab --leaks",
+    "test": "tape test/test.*.js",
     "lint": "eslint **/*.js"
   },
   "keywords": [
@@ -20,11 +20,11 @@
     "mongodb": "^2.2.10"
   },
   "devDependencies": {
-    "code": "^4.0.0",
     "eslint": "^3.4.0",
     "eslint-config-firstandthird": "^3.0.2",
     "eslint-plugin-import": "^2.2.0",
     "hapi": "^16.0.2",
-    "lab": "^11.2.1"
+    "tape": "^4.6.3",
+    "tape-extras": "0.0.2"
   }
 }
