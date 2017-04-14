@@ -17,14 +17,14 @@
     "async": "^2.1.1",
     "automap": "^0.2.0",
     "lodash.get": "^4.4.2",
-    "mongodb": "^2.2.10"
+    "mongodb": "^2.2.10",
+    "str2fn": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^3.4.0",
     "eslint-config-firstandthird": "^3.0.2",
     "eslint-plugin-import": "^2.2.0",
     "hapi": "^16.0.2",
-    "tape": "^4.6.3",
-    "tape-extras": "0.0.2"
+    "tape": "^4.6.3"
   }
 }

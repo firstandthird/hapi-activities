@@ -64,6 +64,34 @@ test('adds a server method that will process an hook composed of actions', (t) =
   });
 });
 
+test('adds a server method that will process another server method and data', (t) => {
+  let numberOfCalls = 0;
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000, // 1 second
+    hooks: {
+      'user.add': [
+        'addToMailchimp("someId", user.email)',
+      ]
+    }
+  }, (cleanup, server, collection) => {
+    server.method('addToMailchimp', (id, email, callback) => {
+      t.equal(email, 'bob@bob.com', 'resolves and passes data to method call');
+      t.equal(id, 'someId', 'resolves and passes data to method');
+      numberOfCalls ++;
+      return callback(null, numberOfCalls);
+    });
+    server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
+    setTimeout(() => {
+      t.equal(numberOfCalls, 1, 'calls correct number of times');
+      cleanup(t);
+    }, 2500);
+  });
+});
+
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
