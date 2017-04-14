@@ -39,23 +39,23 @@ test('adds a server method that will process an hook composed of actions', (t) =
       age: 7
     });
     setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1);
-      t.equal(numberOfCalls.trumpet, 7);
-      t.equal(numberOfCalls.pottery, 1);
+      t.equal(numberOfCalls.kickball, 1, 'will call a server method');
+      t.equal(numberOfCalls.trumpet, 7, 'will call a server method on interval');
+      t.equal(numberOfCalls.pottery, 1, 'will call a server method');
       collection.findOne({}, (err, hook) => {
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
+        t.equal(hook.status, 'complete', 'hook will be marked "complete"');
+        t.equal(hook.results.length, 3, 'all hooks were called');
         server.methods.hook('after school', {
           name: 'sven',
           age: 5
         });
         setTimeout(() => {
-          t.equal(numberOfCalls.kickball, 2);
-          t.equal(numberOfCalls.trumpet, 5);
-          t.equal(numberOfCalls.pottery, 2);
+          t.equal(numberOfCalls.kickball, 2, 'will call a server method again');
+          t.equal(numberOfCalls.trumpet, 5, 'will call a server method again');
+          t.equal(numberOfCalls.pottery, 2, 'will call a server method again');
           collection.findOne({}, (err, hook2) => {
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
+            t.equal(hook2.status, 'complete', 'hooks wil be marked "complete" again');
+            t.equal(hook2.results.length, 3, "all hooks were called again");
             cleanup(t);
           });
         }, 2500);
@@ -64,7 +64,8 @@ test('adds a server method that will process an hook composed of actions', (t) =
   });
 });
 
-test('adds a server method that will process an hook composed of actions', (t) => {
+test('adds a server method that will process another server method and data', (t) => {
+  let numberOfCalls = 0;
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -72,56 +73,21 @@ test('adds a server method that will process an hook composed of actions', (t) =
     },
     interval: 1000, // 1 second
     hooks: {
-      'after school': [
-        'kickball',
-        'trumpet',
-        'pottery',
+      'user.add': [
+        'addToMailchimp("someId", user.email)',
       ]
     }
   }, (cleanup, server, collection) => {
-    const numberOfCalls = {
-      kickball: 0,
-      trumpet: 0,
-      pottery: 0
-    };
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback(null, numberOfCalls.kickball);
+    server.method('addToMailchimp', (id, email, callback) => {
+      t.equal(id, 'someId', 'resolves and passes data to method');
+      t.equal(email, 'bob@bob.com', 'resolves and passes data to method call');
+      numberOfCalls ++;
+      // return callback(null, numberOfCalls);
     });
-    server.method('trumpet', (data, callback) => {
-      numberOfCalls.trumpet = data.age;
-      callback(null, numberOfCalls.trumpet);
-    });
-    server.method('pottery', (data, callback) => {
-      numberOfCalls.pottery ++;
-      callback(null, numberOfCalls.pottery);
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    });
+    server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
     setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1);
-      t.equal(numberOfCalls.trumpet, 7);
-      t.equal(numberOfCalls.pottery, 1);
-      collection.findOne({}, (err, hook) => {
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
-        server.methods.hook('after school', {
-          name: 'sven',
-          age: 5
-        });
-        setTimeout(() => {
-          t.equal(numberOfCalls.kickball, 2);
-          t.equal(numberOfCalls.trumpet, 5);
-          t.equal(numberOfCalls.pottery, 2);
-          collection.findOne({}, (err, hook2) => {
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
-            cleanup(t);
-          });
-        }, 2500);
-      });
+      t.equal(numberOfCalls, 1, 'calls correct number of times');
+      cleanup(t);
     }, 2500);
   });
 });

@@ -4,6 +4,7 @@ const mongo = require('mongodb');
 const async = require('async');
 const automap = require('automap');
 const get = require('lodash.get');
+const str2fn = require('str2fn');
 
 const defaults = {
   mongo: {
@@ -70,6 +71,20 @@ exports.register = (server, options, next) => {
                 if (typeof action === 'object') {
                   actionData = Object.assign(action.data, actionData);
                   action = action.method;
+                }
+                if (typeof action === 'string') {
+                  // if it's a method:
+                  if (action.indexOf(')') > action.indexOf(')') > -1) {
+                    str2fn.execute(action, server.methods, Object.assign({}, hook.hookData), (error, output) => {
+                      if (error) {
+                        updateHook.results.push({ action, error });
+                        updateHook.status = 'failed';
+                      } else {
+                        updateHook.results.push({ action, output });
+                      }
+                      return eachDone();
+                    });
+                  }
                 }
                 // if a timeout is specified then put a timeout wrapper around the server method call:
                 const actionCall = settings.timeout ? async.timeout(get(server.methods, action), settings.timeout) : get(server.methods, action);
