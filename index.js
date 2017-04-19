@@ -1,7 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 'use strict';
 const mongo = require('mongodb');
-
 const defaults = {
   mongo: {
     host: 'mongodb://localhost:27017',
