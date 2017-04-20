@@ -251,9 +251,44 @@ test('can handle and report callback errors during an action', (t) => {
       t.equal(numberOfCalls.breakfast, 1);
       // check the db object:
       collection.findOne({}, (err2, hook) => {
+        console.log(hook)
         t.equal(hook.status, 'failed');
         t.equal(hook.results.length, 1);
         t.equal(hook.results[0].error, 'I am an error');
+        cleanup(t);
+      });
+    }, 3000);
+  });
+});
+
+test('can handle and report hook errors during an action', (t) => {
+  setup({
+    log: true,
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 500,
+    hooks: {
+      'before school': ['breakfast']
+    }
+  }, (cleanup, server, collection) => {
+    const numberOfCalls = {
+      breakfast: 0
+    };
+    server.method('breakfast', (data, callback) => {
+      numberOfCalls.breakfast ++;
+      return callback(new Error('this is a thrown error'));
+    });
+    server.methods.hook('before school', {
+      name: 'sven',
+      age: 5
+    });
+    setTimeout(() => {
+      t.equal(numberOfCalls.breakfast, 1);
+      // check the db object:
+      collection.findOne({}, (err2, hook) => {
+        t.equal(hook.status, 'failed');
         cleanup(t);
       });
     }, 3000);
