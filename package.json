@@ -1,6 +1,6 @@
 {
   "name": "hapi-hooks",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "Hapi plugin for doing deferred processes",
   "main": "index.js",
   "scripts": {
