@@ -20,7 +20,11 @@ exports.register = (server, options, next) => {
     }
     // initialize the server object:
     const collection = db.collection(settings.mongo.collectionName);
-
+    collection.createIndex({ status: 1 }, (indexErr, result) => {
+      if (indexErr) {
+        throw indexErr;
+      }
+    });
     // update all hooks:
     const updateHooks = require('./lib/updateHooks.js');
 
