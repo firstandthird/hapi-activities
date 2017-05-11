@@ -367,6 +367,42 @@ test('handles actions passed in a { method s: <method>, data: <data> } form', (t
   });
 });
 
+test('supports the runAfter option', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000, // 1 second
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const numberOfCalls = {
+      kickball: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback(null, numberOfCalls.kickball);
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runAfter: new Date(new Date().getTime() + 3000)
+    });
+    setTimeout(() => {
+      t.equal(numberOfCalls.kickball, 0);
+      setTimeout(() => {
+        t.equal(numberOfCalls.kickball, 1);
+        cleanup(t);
+      }, 2500);
+    }, 2500);
+  });
+});
+
 test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
