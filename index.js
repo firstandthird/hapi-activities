@@ -20,7 +20,7 @@ exports.register = (server, options, next) => {
     }
     // initialize the server object:
     const collection = db.collection(settings.mongo.collectionName);
-    collection.createIndex({ status: 1 }, (indexErr, result) => {
+    collection.createIndex({ status: 1 }, { background: true }, (indexErr, result) => {
       if (indexErr) {
         throw indexErr;
       }
