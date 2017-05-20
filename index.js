@@ -32,12 +32,12 @@ exports.register = (server, options, next) => {
 
     // register the 'hook' method with the server:
     if (options.decorate) {
-      server.decorate('server', 'hook', (hookName, hookData) => {
-        hook(server, settings, collection, hookName, hookData);
+      server.decorate('server', 'hook', (hookName, hookData, hookOptions) => {
+        hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
     } else {
-      server.method('hook', (hookName, hookData) => {
-        hook(server, settings, collection, hookName, hookData);
+      server.method('hook', (hookName, hookData, hookOptions) => {
+        hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
     }
 
