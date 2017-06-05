@@ -23,29 +23,33 @@ exports.register = (server, options, next) => {
 
     // update all hooks:
     const updateHooks = require('./lib/updateHooks.js');
-
     const hook = require('./lib/hook.js');
-    const retry = (collection, hookId) => {
-      collection.find({ _id: hookId }).toArray((err, result) => {
-        console.log(err);
-        console.log(result);
-      });
-    };
+    const retry = require('./lib/retry.js');
 
     // register the 'hook' method with the server:
     if (options.decorate) {
       server.decorate('server', 'hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
-      server.decorate('server', 'retry', (hookId) => {
-        retry(server, settings, collection, hookId, hookOptions || {});
+      server.decorate('server', 'retry', (hookId, callback) => {
+        retry(server, settings, collection, hookId, (err, response) => {
+          if (err) {
+            return callback(err);
+          }
+          callback(err, response.performActions);
+        });
       });
     } else {
       server.method('hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
-      server.method('retry', (hookId) => {
-        retry(collection, hookId);
+      server.method('retry', (hookId, callback) => {
+        retry(server, settings, collection, hookId, (err, response) => {
+          if (err) {
+            return callback(err);
+          }
+          callback(err, response.performActions);
+        });
       });
     }
 
