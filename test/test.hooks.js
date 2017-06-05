@@ -418,3 +418,30 @@ test('will not add an hook if it does not exist', (t) => {
     }, 2500);
   });
 });
+
+
+// test('retry a hook from id', (t) => {
+//   let numberOfCalls = 0;
+//   setup({
+//     mongo: {
+//       host: 'mongodb://localhost:27017',
+//       collectionName: 'hapi-hooks-test'
+//     },
+//     interval: 100000, // 100 seconds
+//     hooks: {
+//       'repeat': [
+//         'repeatableHook("someId", user.email)',
+//       ]
+//     }
+//   }, (cleanup, server, collection) => {
+//     server.method('repeatableHook', (callback) => {
+//       numberOfCalls ++;
+//       return callback(null, numberOfCalls);
+//     });
+//     server.methods.hook('repeat', {});
+//     setTimeout(() => {
+//       t.equal(numberOfCalls, 1, 'calls correct number of times');
+//       cleanup(t);
+//     }, 2500);
+//   });
+// });

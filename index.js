@@ -25,15 +25,27 @@ exports.register = (server, options, next) => {
     const updateHooks = require('./lib/updateHooks.js');
 
     const hook = require('./lib/hook.js');
+    const retry = (collection, hookId) => {
+      collection.find({ _id: hookId }).toArray((err, result) => {
+        console.log(err);
+        console.log(result);
+      });
+    };
 
     // register the 'hook' method with the server:
     if (options.decorate) {
       server.decorate('server', 'hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
+      server.decorate('server', 'retry', (hookId) => {
+        retry(server, settings, collection, hookId, hookOptions || {});
+      });
     } else {
       server.method('hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
+      });
+      server.method('retry', (hookId) => {
+        retry(collection, hookId);
       });
     }
 
