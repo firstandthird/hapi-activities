@@ -8,7 +8,9 @@ const defaults = {
   },
   timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
   interval: 5 * 60 * 1000, // 5 minutes
-  log: false
+  log: false,
+  batchSize: 0,
+  concurrent: 10
 };
 
 exports.register = (server, options, next) => {
