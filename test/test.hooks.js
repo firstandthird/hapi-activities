@@ -241,6 +241,11 @@ test('can handle and report callback errors during an action', (t) => {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
+      
+      if (numberOfCalls.breakfast === 2) {
+        return callback();
+      }
+
       numberOfCalls.breakfast ++;
       return callback('I am an error');
     });
@@ -249,13 +254,13 @@ test('can handle and report callback errors during an action', (t) => {
       age: 5
     });
     setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 1);
+      t.equal(numberOfCalls.breakfast, 2);
       // check the db object:
       collection.findOne({}, (err2, hook) => {
         console.log(hook)
-        t.equal(hook.status, 'failed');
+        t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
-        t.equal(hook.results[0].error, 'I am an error');
+        t.equal(hook.results[0].error, undefined);
         cleanup(t);
       });
     }, 3000);
@@ -278,6 +283,10 @@ test('can handle and report hook errors during an action', (t) => {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
+      if (numberOfCalls.breakfast === 1) {
+        return callback();
+      }
+
       numberOfCalls.breakfast ++;
       return callback(new Error('this is a thrown error'));
     });
@@ -287,11 +296,7 @@ test('can handle and report hook errors during an action', (t) => {
     });
     setTimeout(() => {
       t.equal(numberOfCalls.breakfast, 1);
-      // check the db object:
-      collection.findOne({}, (err2, hook) => {
-        t.equal(hook.status, 'failed');
-        cleanup(t);
-      });
+      cleanup(t);
     }, 3000);
   });
 });
@@ -319,13 +324,13 @@ test('can handle and report server errors during an action', (t) => {
       age: 5
     });
     setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 1);
+      t.equal(numberOfCalls.breakfast, 3);
       // check the db object:
       collection.findOne({ hookName: 'during school' }, (err2, hook) => {
         if (err2) {
           throw err2;
         }
-        t.equal(hook.status, 'failed');
+        t.equal(hook.status, 'aborted');
         t.equal(hook.results.length, 1);
         // t.equal(hook.results[0].error).to.include('not is not defined');
         cleanup(t);

@@ -10,7 +10,8 @@ const defaults = {
   interval: 5 * 60 * 1000, // 5 minutes
   log: false,
   batchSize: 0,
-  concurrent: 10
+  concurrent: 10,
+  maxRetries: 3
 };
 
 exports.register = (server, options, next) => {
