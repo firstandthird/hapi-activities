@@ -34,7 +34,7 @@ exports.register = (server, options, next) => {
       server.decorate('server', 'hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
-      server.decorate('server', 'retry', (hookId, callback) => {
+      server.decorate('server', 'retryHook', (hookId, callback) => {
         retry(server, settings, collection, hookId, (err, response) => {
           if (err) {
             return callback(err);
@@ -46,7 +46,7 @@ exports.register = (server, options, next) => {
       server.method('hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
-      server.method('retry', (hookId, callback) => {
+      server.method('retryHook', (hookId, callback) => {
         retry(server, settings, collection, hookId, (err, response) => {
           if (err) {
             return callback(err);

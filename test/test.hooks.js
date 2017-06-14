@@ -464,7 +464,7 @@ test('retry a hook from id', (t) => {
     },
     retry(id, startup, done) {
       key = 1;
-      startup.server.methods.retry(id[0]._id, done);
+      startup.server.methods.retryHook(id[0]._id, done);
     }
   }, (err, result) => {
     t.equal(err, null);
