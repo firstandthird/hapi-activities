@@ -8,7 +8,10 @@ const defaults = {
   },
   timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
   interval: 5 * 60 * 1000, // 5 minutes
-  log: false
+  log: false,
+  batchSize: 0,
+  concurrent: 10,
+  maxRetries: 3
 };
 
 exports.register = (server, options, next) => {
@@ -23,17 +26,33 @@ exports.register = (server, options, next) => {
 
     // update all hooks:
     const updateHooks = require('./lib/updateHooks.js');
-
     const hook = require('./lib/hook.js');
+    const retry = require('./lib/retry.js');
 
     // register the 'hook' method with the server:
     if (options.decorate) {
       server.decorate('server', 'hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
+      server.decorate('server', 'retryHook', (hookId, callback) => {
+        retry(server, settings, collection, hookId, (err, response) => {
+          if (err) {
+            return callback(err);
+          }
+          callback(err, response.performActions);
+        });
+      });
     } else {
       server.method('hook', (hookName, hookData, hookOptions) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
+      });
+      server.method('retryHook', (hookId, callback) => {
+        retry(server, settings, collection, hookId, (err, response) => {
+          if (err) {
+            return callback(err);
+          }
+          callback(err, response.performActions);
+        });
       });
     }
 

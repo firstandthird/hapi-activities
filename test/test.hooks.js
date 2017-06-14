@@ -1,6 +1,7 @@
 'use strict';
 const setup = require('./setup.js');
 const test = require('tape');
+const async = require('async');
 
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
@@ -240,6 +241,11 @@ test('can handle and report callback errors during an action', (t) => {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
+      
+      if (numberOfCalls.breakfast === 2) {
+        return callback();
+      }
+
       numberOfCalls.breakfast ++;
       return callback('I am an error');
     });
@@ -248,13 +254,13 @@ test('can handle and report callback errors during an action', (t) => {
       age: 5
     });
     setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 1);
+      t.equal(numberOfCalls.breakfast, 2);
       // check the db object:
       collection.findOne({}, (err2, hook) => {
         console.log(hook)
-        t.equal(hook.status, 'failed');
+        t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
-        t.equal(hook.results[0].error, 'I am an error');
+        t.equal(hook.results[0].error, undefined);
         cleanup(t);
       });
     }, 3000);
@@ -277,6 +283,10 @@ test('can handle and report hook errors during an action', (t) => {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
+      if (numberOfCalls.breakfast === 1) {
+        return callback();
+      }
+
       numberOfCalls.breakfast ++;
       return callback(new Error('this is a thrown error'));
     });
@@ -286,11 +296,7 @@ test('can handle and report hook errors during an action', (t) => {
     });
     setTimeout(() => {
       t.equal(numberOfCalls.breakfast, 1);
-      // check the db object:
-      collection.findOne({}, (err2, hook) => {
-        t.equal(hook.status, 'failed');
-        cleanup(t);
-      });
+      cleanup(t);
     }, 3000);
   });
 });
@@ -318,13 +324,13 @@ test('can handle and report server errors during an action', (t) => {
       age: 5
     });
     setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 1);
+      t.equal(numberOfCalls.breakfast, 3);
       // check the db object:
       collection.findOne({ hookName: 'during school' }, (err2, hook) => {
         if (err2) {
           throw err2;
         }
-        t.equal(hook.status, 'failed');
+        t.equal(hook.status, 'aborted');
         t.equal(hook.results.length, 1);
         // t.equal(hook.results[0].error).to.include('not is not defined');
         cleanup(t);
@@ -414,7 +420,57 @@ test('will not add an hook if it does not exist', (t) => {
   }, (cleanup, server) => {
     server.methods.hook('perpetual motion', {});
     setTimeout(() => {
-      cleanup(t, process.exit);
+      cleanup(t);
     }, 2500);
+  });
+});
+
+test('retry a hook from id', (t) => {
+  let key = 0; // our test hook won't pass while key is zero
+  let numberOfCalls = 0;
+  async.autoInject({
+    startup(done) {
+      setup({
+        mongo: {
+          host: 'mongodb://localhost:27017',
+          collectionName: 'hapi-hooks-test'
+        },
+        interval: 1000,
+        hooks: {
+          repeat: [
+            'repeatableHook()',
+          ]
+        }
+      }, (cleanup, server, collection) => {
+        // this method  won't work until someone changes 'key':
+        server.method('repeatableHook', (callback) => {
+          if (key === 0) {
+            return callback(new Error('key was zero'));
+          }
+          numberOfCalls++;
+          return callback(null, true);
+        });
+        server.methods.hook('repeat', {});
+        return done(null, { server, collection, cleanup });
+      });
+    },
+    // wait for the hook to fire, since key is 0 it won't work:
+    wait(startup, done) {
+      setTimeout(done, 1500);
+    },
+    // get the id for the failed job:
+    id(startup, wait, done) {
+      startup.collection.find({ status: 'failed' }).toArray(done);
+    },
+    retry(id, startup, done) {
+      key = 1;
+      startup.server.methods.retryHook(id[0]._id, done);
+    }
+  }, (err, result) => {
+    t.equal(err, null);
+    t.equal(numberOfCalls > 0, true);
+    t.equal(result.retry.results.length, 1);
+    t.equal(result.retry.results[0].output, true);
+    result.startup.cleanup(t, process.exit);
   });
 });
