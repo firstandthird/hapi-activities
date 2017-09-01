@@ -241,7 +241,7 @@ test('can handle and report callback errors during an action', (t) => {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
-      
+
       if (numberOfCalls.breakfast === 2) {
         return callback();
       }
@@ -406,6 +406,43 @@ test('supports the runAfter option', (t) => {
         cleanup(t);
       }, 2500);
     }, 2500);
+  });
+});
+
+test('supports the runEvery option', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const numberOfCalls = {
+      kickball: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback();
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runEvery: 'every 2 second',
+      recurringId: 'afterSchool'
+    });
+    async.timesSeries(5, (i, cb) => {
+      setTimeout(() => {
+        cb(null, t.equal(numberOfCalls.kickball, i));
+      }, 1010);
+    }, () => {
+      cleanup(t);
+    });
   });
 });
 
