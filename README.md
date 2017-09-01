@@ -70,4 +70,11 @@ added the user object
 calculating the widget number
 ```
 
-Note that the server methods within an hook call are invoked in parallel, so the above example outputs could be printed in any order.  
+Note that the server methods within an hook call are invoked in parallel, so the above example outputs could be printed in any order.
+
+### Recurring Support
+
+Pass the following options:
+
+`runEvery` - A laterjs supported string, ex: `every week`
+`recurringId` - A unique identifier. Used to prevent duplicate recurring hooks
