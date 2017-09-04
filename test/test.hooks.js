@@ -438,10 +438,9 @@ test('supports the runEvery option', (t) => {
     let waitCycles = 0;
     const wait = () => setTimeout(() => {
       waitCycles ++;
-      if (waitCycles > 5) {
+      if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
-      }
-      if (numberOfCalls.kickball > 2) {
+      } else if (numberOfCalls.kickball > 2) {
         cleanup(t);
       } else {
         wait();
