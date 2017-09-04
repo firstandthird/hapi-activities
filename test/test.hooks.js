@@ -257,7 +257,6 @@ test('can handle and report callback errors during an action', (t) => {
       t.equal(numberOfCalls.breakfast, 2);
       // check the db object:
       collection.findOne({}, (err2, hook) => {
-        console.log(hook)
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
         t.equal(hook.results[0].error, undefined);
@@ -436,13 +435,19 @@ test('supports the runEvery option', (t) => {
       runEvery: 'every 2 second',
       recurringId: 'afterSchool'
     });
-    async.timesSeries(5, (i, cb) => {
-      setTimeout(() => {
-        cb(null, t.equal(numberOfCalls.kickball >= 2, true));
-      }, 1010);
-    }, () => {
-      cleanup(t);
-    });
+    let waitCycles = 0;
+    const wait = () => setTimeout(() => {
+      waitCycles ++;
+      if (waitCycles > 5) {
+        t.fail('hook did not recur during allotted time period');
+      }
+      if (numberOfCalls.kickball > 2) {
+        cleanup(t);
+      } else {
+        wait();
+      }
+    }, 2000);
+    wait();
   });
 });
 
