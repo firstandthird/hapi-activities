@@ -241,7 +241,7 @@ test('can handle and report callback errors during an action', (t) => {
       breakfast: 0
     };
     server.method('breakfast', (data, callback) => {
-      
+
       if (numberOfCalls.breakfast === 2) {
         return callback();
       }
@@ -257,7 +257,6 @@ test('can handle and report callback errors during an action', (t) => {
       t.equal(numberOfCalls.breakfast, 2);
       // check the db object:
       collection.findOne({}, (err2, hook) => {
-        console.log(hook)
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
         t.equal(hook.results[0].error, undefined);
@@ -406,6 +405,48 @@ test('supports the runAfter option', (t) => {
         cleanup(t);
       }, 2500);
     }, 2500);
+  });
+});
+
+test('supports the runEvery option', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const numberOfCalls = {
+      kickball: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback();
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runEvery: 'every 2 second',
+      recurringId: 'afterSchool'
+    });
+    let waitCycles = 0;
+    const wait = () => setTimeout(() => {
+      waitCycles ++;
+      if (waitCycles > 10) {
+        t.fail('hook did not recur during allotted time period');
+      } else if (numberOfCalls.kickball > 2) {
+        cleanup(t);
+      } else {
+        wait();
+      }
+    }, 2000);
+    wait();
   });
 });
 
