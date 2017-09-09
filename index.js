@@ -77,10 +77,10 @@ exports.register = (server, options, next) => {
         if (err) {
           server.log(['hapi-hooks', 'error'], err);
         }
-        if (continueProcessing) {
-          setTimeout(timer, settings.interval);
-        }
       });
+      if (continueProcessing) {
+        setTimeout(timer, settings.interval);
+      }
     };
     timer();
     // now tell hapi that we're done registering the plugin!
