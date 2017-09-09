@@ -509,7 +509,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
       if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
       } else if (dodgeball > 0) {
-        t.equal(kickball, 2, 'kickball only runs twice in 4000ms despite a 200ms intervall');
+        t.equal(kickball < 3, true, 'kickball only runs once or twice in 4000ms despite a 200ms intervall');
         cleanup(t);
       } else {
         wait();
