@@ -2,7 +2,7 @@
 const setup = require('./setup.js');
 const test = require('tape');
 const async = require('async');
-
+/*
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
@@ -463,6 +463,59 @@ test('will not add an hook if it does not exist', (t) => {
     setTimeout(() => {
       cleanup(t);
     }, 2500);
+  });
+});
+*/
+test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: true,
+    interval: 200,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ],
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    let kickball = 0;
+    let dodgeball = 0;
+    server.method('kickball', (data, callback) => {
+      kickball ++;
+      callback();
+    });
+    server.method('dodgeball', (data, callback) => {
+      setTimeout(() => {
+        dodgeball ++;
+        callback();
+      }, 2000);
+    });
+    server.methods.hook('after school', {}, {
+      runEvery: 'every 2 second',
+      recurringId: 'afterSchool'
+    });
+    server.methods.hook('before school', {}, {
+      runEvery: 'every 2 second',
+      recurringId: 'beforeSchool'
+    });
+    let waitCycles = 0;
+    const wait = () => setTimeout(() => {
+      waitCycles ++;
+      if (waitCycles > 10) {
+        t.fail('hook did not recur during allotted time period');
+      } else if (dodgeball > 0) {
+        t.equal(kickball > 1, true);
+        cleanup(t);
+      } else {
+        wait();
+      }
+    }, 4000);
+    wait();
   });
 });
 
