@@ -2,7 +2,7 @@
 const setup = require('./setup.js');
 const test = require('tape');
 const async = require('async');
-/*
+
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
@@ -465,7 +465,7 @@ test('will not add an hook if it does not exist', (t) => {
     }, 2500);
   });
 });
-*/
+
 test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
@@ -509,7 +509,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
       if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
       } else if (dodgeball > 0) {
-        t.equal(kickball > 1, true);
+        t.equal(kickball, 2, 'kickball only runs twice in 4000ms despite a 200ms intervall');
         cleanup(t);
       } else {
         wait();

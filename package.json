@@ -15,7 +15,6 @@
   "license": "MIT",
   "dependencies": {
     "async": "^2.1.1",
-    "automap": "^1.1.0",
     "later": "^1.2.0",
     "lodash.get": "^4.4.2",
     "mongodb": "^2.2.10",
