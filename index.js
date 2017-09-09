@@ -79,7 +79,7 @@ exports.register = (server, options, next) => {
           server.log(['hapi-hooks', 'error'], countErr);
         }
         if (settings.log) {
-          server.log(['hapi-hooks', 'Status'], { processing: current.processing, waiting: current.waiting, completed: current.completed });
+          server.log(['hapi-hooks', 'Status'], current);
         }
         // wait until no outstanding processes:
         if (current.processing !== 0) {
