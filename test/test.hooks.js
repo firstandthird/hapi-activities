@@ -406,7 +406,7 @@ test('supports the runEvery option', (t) => {
       } else {
         wait();
       }
-    }, 2000);
+    }, 4000);
     wait();
   });
 });
