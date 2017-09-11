@@ -398,6 +398,7 @@ test('supports the runEvery option', (t) => {
     });
     let waitCycles = 0;
     const wait = () => setTimeout(() => {
+      console.log('wait cycle %s', waitCycles);
       waitCycles ++;
       if (numberOfCalls.kickball > 1) {
         cleanup(t);
