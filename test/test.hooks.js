@@ -385,8 +385,11 @@ test('supports the runEvery option', (t) => {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
-      console.log('----------------------------------kickball is called')
       numberOfCalls.kickball ++;
+      if (numberOfCalls.kickball > 1) {
+        t.equal(numberOfCalls.kickball > 1, true);
+        cleanup(t);
+      }
       callback();
     });
     server.methods.hook('after school', {
@@ -396,24 +399,6 @@ test('supports the runEvery option', (t) => {
       runEvery: 'every 2 second',
       recurringId: 'afterSchool'
     });
-    let waitCycles = 0;
-    const wait = () => setTimeout(() => {
-      console.log('wait cycle %s', waitCycles);
-      waitCycles ++;
-      if (numberOfCalls.kickball > 1) {
-        cleanup(t);
-      } else if (waitCycles > 100) {
-        console.log('was it called?')
-        console.log('was it called?')
-        console.log('was it called?')
-        console.log(numberOfCalls)
-        t.fail('hook did not recur during allotted time period');
-        cleanup(t, ()=>{}, true);
-      } else {
-        wait();
-      }
-    }, 2000);
-    wait();
   });
 });
 
