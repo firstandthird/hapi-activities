@@ -300,44 +300,6 @@ test('can handle and report hook errors during an action', (t) => {
   });
 });
 
-test('can handle and report server errors during an action', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 500,
-    hooks: {
-      'during school': ['breakfast']
-    }
-  }, (cleanup, server, collection) => {
-    const numberOfCalls = {
-      breakfast: 0
-    };
-    server.method('breakfast', (data, callback) => {
-      numberOfCalls.breakfast ++;
-      return not.a.thing();
-    });
-    server.methods.hook('during school', {
-      name: 'sven',
-      age: 5
-    });
-    setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 3);
-      // check the db object:
-      collection.findOne({ hookName: 'during school' }, (err2, hook) => {
-        if (err2) {
-          throw err2;
-        }
-        t.equal(hook.status, 'aborted');
-        t.equal(hook.results.length, 1);
-        // t.equal(hook.results[0].error).to.include('not is not defined');
-        cleanup(t);
-      });
-    }, 3000);
-  });
-});
-
 test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
   let passedData = null;
   setup({
