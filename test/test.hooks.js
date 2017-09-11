@@ -385,6 +385,7 @@ test('supports the runEvery option', (t) => {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
+      console.log('----------------------------------kickball is called')
       numberOfCalls.kickball ++;
       callback();
     });
@@ -400,7 +401,7 @@ test('supports the runEvery option', (t) => {
       waitCycles ++;
       if (numberOfCalls.kickball > 1) {
         cleanup(t);
-      } else if (waitCycles > 10) {
+      } else if (waitCycles > 100) {
         console.log('was it called?')
         console.log('was it called?')
         console.log('was it called?')
@@ -410,7 +411,7 @@ test('supports the runEvery option', (t) => {
       } else {
         wait();
       }
-    }, 4000);
+    }, 2000);
     wait();
   });
 });
