@@ -28,6 +28,7 @@ module.exports = (options, callback) => {
         return callback((t, endMethod) => {
           collection.drop(() => {
             server.stop(() => {
+              t.end();
               if (endMethod) {
                 endMethod();
               }
