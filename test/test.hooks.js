@@ -401,7 +401,7 @@ test('supports the runEvery option', (t) => {
       if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
         cleanup(t, ()=>{}, true);
-      } else if (numberOfCalls.kickball > 2) {
+      } else if (numberOfCalls.kickball > 1) {
         cleanup(t);
       } else {
         wait();
