@@ -29,7 +29,7 @@ exports.register = (server, options, next) => {
       }
     });
     // update all hooks:
-    const updateHooks = require('./lib/updateHooks.js');
+    const queryHooks = require('./lib/queryHooks.js');
     const hook = require('./lib/hook.js');
     const retry = require('./lib/retry.js');
 
@@ -73,14 +73,14 @@ exports.register = (server, options, next) => {
       if (!continueProcessing) {
         return;
       }
-      updateHooks(server, settings, collection, (err) => {
+      queryHooks(server, settings, collection, (err) => {
         if (err) {
           server.log(['hapi-hooks', 'error'], err);
         }
-        if (continueProcessing) {
-          setTimeout(timer, settings.interval);
-        }
       });
+      if (continueProcessing) {
+        setTimeout(timer, settings.interval);
+      }
     };
     timer();
     // now tell hapi that we're done registering the plugin!
