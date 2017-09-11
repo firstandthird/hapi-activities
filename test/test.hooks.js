@@ -370,7 +370,7 @@ test('supports the runEvery option', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000,
+    interval: 200,
     hooks: {
       'after school': [
         'kickball'
@@ -381,9 +381,10 @@ test('supports the runEvery option', (t) => {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
+      console.log('---kickball called %s', numberOfCalls.kickball);
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
-        t.equal(numberOfCalls.kickball > 1, true);
+        console.log('kickball done')
         cleanup(t);
       }
       callback();
@@ -440,7 +441,6 @@ test('will wait to process next batch of hooks until all previous hooks are done
       setTimeout(() => {
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
         cleanup(t);
-        // callback();
       }, 4000);
     });
     server.methods.hook('after school', {}, {
