@@ -432,15 +432,15 @@ test('will wait to process next batch of hooks until all previous hooks are done
     }
   }, (cleanup, server, collection, db) => {
     let kickball = 0;
-    let dodgeball = 0;
     server.method('kickball', (data, callback) => {
       kickball ++;
       callback();
     });
     server.method('dodgeball', (data, callback) => {
       setTimeout(() => {
-        dodgeball ++;
-        callback();
+        t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
+        cleanup(t);
+        // callback();
       }, 4000);
     });
     server.methods.hook('after school', {}, {
@@ -451,20 +451,6 @@ test('will wait to process next batch of hooks until all previous hooks are done
       runEvery: 'every 2 second',
       recurringId: 'beforeSchool'
     });
-    let waitCycles = 0;
-    const wait = () => setTimeout(() => {
-      waitCycles ++;
-      if (waitCycles > 10) {
-        t.fail('hook did not recur during allotted time period');
-        cleanup(t, ()=>{}, true);
-      } else if (dodgeball > 0) {
-        t.equal(kickball < 3, true, 'kickball only runs once or twice in 4000ms despite a 200ms intervall');
-        cleanup(t);
-      } else {
-        wait();
-      }
-    }, 4000);
-    wait();
   });
 });
 
