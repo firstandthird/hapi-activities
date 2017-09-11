@@ -381,10 +381,8 @@ test('supports the runEvery option', (t) => {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
-      console.log('---kickball called %s', numberOfCalls.kickball);
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
-        console.log('kickball done')
         return cleanup(t);
       }
       callback();
@@ -441,7 +439,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
       setTimeout(() => {
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
         cleanup(t);
-      }, 4000);
+      }, 6000);
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
