@@ -25,10 +25,12 @@ module.exports = (options, callback) => {
         register: hapiHooks,
         options
       }, (err) => {
-        return callback((t, endMethod) => {
+        return callback((t, endMethod, alreadyEnded) => {
           collection.drop(() => {
             server.stop(() => {
-              t.end();
+              if (!alreadyEnded) {
+                t.end();
+              }
               if (endMethod) {
                 endMethod();
               }

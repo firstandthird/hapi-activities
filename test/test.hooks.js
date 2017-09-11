@@ -400,6 +400,7 @@ test('supports the runEvery option', (t) => {
       waitCycles ++;
       if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
+        cleanup(t, ()=>{}, true);
       } else if (numberOfCalls.kickball > 2) {
         cleanup(t);
       } else {
@@ -453,7 +454,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
       setTimeout(() => {
         dodgeball ++;
         callback();
-      }, 2000);
+      }, 4000);
     });
     server.methods.hook('after school', {}, {
       runEvery: 'every 2 second',
@@ -468,6 +469,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
       waitCycles ++;
       if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
+        cleanup(t, ()=>{}, true);
       } else if (dodgeball > 0) {
         t.equal(kickball < 3, true, 'kickball only runs once or twice in 4000ms despite a 200ms intervall');
         cleanup(t);
