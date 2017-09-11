@@ -381,8 +381,10 @@ test('supports the runEvery option', (t) => {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
+      console.log('kickball called')
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
+        console.log('kickball completed')
         return cleanup(t);
       }
       callback();
@@ -391,7 +393,7 @@ test('supports the runEvery option', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runEvery: 'every 2 second',
+      runEvery: 'every 2 seconds',
       recurringId: 'afterSchool'
     });
   });
