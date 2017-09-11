@@ -385,7 +385,7 @@ test('supports the runEvery option', (t) => {
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
         console.log('kickball done')
-        cleanup(t);
+        return cleanup(t);
       }
       callback();
     });
