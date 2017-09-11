@@ -443,13 +443,13 @@ test('will wait to process next batch of hooks until all previous hooks are done
         cleanup(t);
       }, 4000);
     });
-    server.methods.hook('after school', {}, {
-      runEvery: 'every 2 second',
-      recurringId: 'afterSchool'
-    });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
       recurringId: 'beforeSchool'
+    });
+    server.methods.hook('after school', {}, {
+      runEvery: 'every 2 second',
+      recurringId: 'afterSchool'
     });
   });
 });
