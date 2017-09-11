@@ -1,6 +1,6 @@
 'use strict';
 const setup = require('./setup.js');
-const test = require('tape');
+const test = require('tap').test;
 const async = require('async');
 
 test('adds a server method that will process an hook composed of actions', (t) => {
