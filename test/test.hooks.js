@@ -471,11 +471,6 @@ test('will wait to process next batch of hooks until all previous hooks are done
         t.fail('hook did not recur during allotted time period');
         cleanup(t, ()=>{}, true);
       } else if (dodgeball > 0) {
-        console.log('=====')
-        console.log('=====')
-        console.log('=====')
-        console.log('=====')
-        console.log(kickball)
         t.equal(kickball < 3, true, 'kickball only runs once or twice in 4000ms despite a 200ms intervall');
         cleanup(t);
       } else {
