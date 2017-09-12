@@ -4,7 +4,7 @@
   "description": "Hapi plugin for doing deferred processes",
   "main": "index.js",
   "scripts": {
-    "test": "tape test/test.*.js",
+    "test": "tap --cov test/test.*.js",
     "lint": "eslint **/*.js"
   },
   "keywords": [
@@ -25,6 +25,6 @@
     "eslint-config-firstandthird": "^3.0.2",
     "eslint-plugin-import": "^2.2.0",
     "hapi": "^16.0.2",
-    "tape": "^4.6.3"
+    "tap": "^10.7.2"
   }
 }
