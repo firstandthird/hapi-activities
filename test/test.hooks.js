@@ -395,7 +395,7 @@ test('supports the runEvery option', (t) => {
       age: 7
     }, {
       runEvery: 'every 2 second',
-      recurringId: 'afterSchool'
+      hookId: 'afterSchool'
     });
     let waitCycles = 0;
     const wait = () => setTimeout(() => {
@@ -403,6 +403,52 @@ test('supports the runEvery option', (t) => {
       if (waitCycles > 10) {
         t.fail('hook did not recur during allotted time period');
       } else if (numberOfCalls.kickball > 2) {
+        cleanup(t);
+      } else {
+        wait();
+      }
+    }, 2000);
+    wait();
+  });
+});
+
+test('supports hookId', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const numberOfCalls = {
+      kickball: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback();
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      hookId: 'afterSchool'
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      hookId: 'afterSchool'
+    });
+    let waitCycles = 0;
+    const wait = () => setTimeout(() => {
+      waitCycles ++;
+      if (waitCycles > 4) {
+        t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
         cleanup(t);
       } else {
         wait();
@@ -459,11 +505,11 @@ test('will wait to process next batch of hooks until all previous hooks are done
     });
     server.methods.hook('after school', {}, {
       runEvery: 'every 2 second',
-      recurringId: 'afterSchool'
+      hookId: 'afterSchool'
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
-      recurringId: 'beforeSchool'
+      hookId: 'beforeSchool'
     });
     let waitCycles = 0;
     const wait = () => setTimeout(() => {
