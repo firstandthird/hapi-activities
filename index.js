@@ -60,6 +60,23 @@ exports.register = (server, options, next) => {
       });
     }
 
+    if (options.recurring) {
+      const hookFunction = (options.decorate) ? server.hook : server.methods.hook;
+      server.ext({
+        type: 'onPostStart',
+        method() {
+          Object.keys(options.recurring).forEach(hookId => {
+            const hookObj = options.recurring[id];
+            const hookData = hookObj.data || {};
+            hookFunction(hookObj.hook, hookData, {
+              runEvery: hookObj.every,
+              hookId
+            });
+          });
+        }
+      });
+    }
+
     // keep processing hooks until the server.stop method is called
     let continueProcessing = true;
     server.ext({
