@@ -2,7 +2,7 @@
 const setup = require('./setup.js');
 const test = require('tap').test;
 const async = require('async');
-
+/*
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
@@ -486,6 +486,58 @@ test('will wait to process next batch of hooks until all previous hooks are done
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
         cleanup(t);
       }, 6000);
+    });
+    server.methods.hook('before school', {}, {
+      runEvery: 'every 2 second',
+      hookId: 'beforeSchool'
+    });
+    server.methods.hook('after school', {}, {
+      runEvery: 'every 2 second',
+      recurringId: 'afterSchool'
+    });
+  });
+});
+*/
+test('only show hooks that have completed since last run', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: true,
+    interval: 200,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ],
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const results = [];
+    let statusCount = 0;
+    server.on('log', (tags, msg) => {
+      if (msg.indexOf('status') !== 0) {
+        statusCount++;
+        console.log('!');
+        console.log('!');
+        console.log('!');
+        console.log('!');
+        console.log(msg);
+        if (statusCount === 2) {
+          cleanup(t);
+        }
+      }
+      results.push(msg);
+    });
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
+    server.method('dodgeball', (data, callback) => {
+      setTimeout(() => {
+        callback();
+      }, 1000);
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
