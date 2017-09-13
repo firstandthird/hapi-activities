@@ -64,15 +64,16 @@ exports.register = (server, options, next) => {
       const hookFunction = (options.decorate) ? server.hook : server.methods.hook;
       server.ext({
         type: 'onPostStart',
-        method() {
+        method(serv, next) {
           Object.keys(options.recurring).forEach(hookId => {
-            const hookObj = options.recurring[id];
+            const hookObj = options.recurring[hookId];
             const hookData = hookObj.data || {};
             hookFunction(hookObj.hook, hookData, {
               runEvery: hookObj.every,
               hookId
             });
           });
+          next();
         }
       });
     }
