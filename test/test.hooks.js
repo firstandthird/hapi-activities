@@ -2,6 +2,7 @@
 const setup = require('./setup.js');
 const test = require('tap').test;
 const async = require('async');
+const hookStatus = require('../lib/hookStatus');
 
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
@@ -494,6 +495,50 @@ test('will wait to process next batch of hooks until all previous hooks are done
     server.methods.hook('after school', {}, {
       runEvery: 'every 2 second',
       recurringId: 'afterSchool'
+    });
+  });
+});
+
+test('hook status only shows hooks that have completed since last run', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: true,
+    interval: 200,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    const intervalTime = new Date();
+    async.autoInject({
+      insert1(done) {
+        // completedOn is previous to the last interval time:
+        collection.insert({ status: 'complete', completedOn: new Date(intervalTime.getTime() - 1000) }, done);
+      },
+      status1(insert1, done) {
+        hookStatus(collection, intervalTime, done);
+      },
+      verify1(status1, done) {
+        t.equal(status1.complete, 0, 'does not return hooks completed before interval time');
+        done();
+      },
+      insert2(verify1, done) {
+        // completedOn is after the last interval time:
+        collection.insert({ status: 'complete', completedOn: new Date(intervalTime.getTime() + 1000) }, done);
+      },
+      status2(insert2, done) {
+        hookStatus(collection, intervalTime, done);
+      },
+      verify2(status2, done) {
+        t.equal(status2.complete, 1, 'returns hooks completed after interval time');
+        done();
+      }
+    }, () => {
+      cleanup(t);
     });
   });
 });
