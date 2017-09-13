@@ -2,7 +2,8 @@
 const setup = require('./setup.js');
 const test = require('tap').test;
 const async = require('async');
-/*
+const hookStatus = require('../lib/hookStatus');
+
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
@@ -497,8 +498,8 @@ test('will wait to process next batch of hooks until all previous hooks are done
     });
   });
 });
-*/
-test('only show hooks that have completed since last run', (t) => {
+
+test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -509,43 +510,35 @@ test('only show hooks that have completed since last run', (t) => {
     hooks: {
       'before school': [
         'dodgeball'
-      ],
-      'after school': [
-        'kickball'
       ]
     }
   }, (cleanup, server, collection, db) => {
-    const results = [];
-    let statusCount = 0;
-    server.on('log', (tags, msg) => {
-      if (msg.indexOf('status') !== 0) {
-        statusCount++;
-        console.log('!');
-        console.log('!');
-        console.log('!');
-        console.log('!');
-        console.log(msg);
-        if (statusCount === 2) {
-          cleanup(t);
-        }
+    const intervalTime = new Date();
+    async.autoInject({
+      insert1(done) {
+        // completedOn is previous to the last interval time:
+        collection.insert({ status: 'complete', completedOn: new Date(intervalTime.getTime() - 1000) }, done);
+      },
+      status1(insert1, done) {
+        hookStatus(collection, intervalTime, done);
+      },
+      verify1(status1, done) {
+        t.equal(status1.complete, 0, 'does not return hooks completed before interval time');
+        done();
+      },
+      insert2(verify1, done) {
+        // completedOn is after the last interval time:
+        collection.insert({ status: 'complete', completedOn: new Date(intervalTime.getTime() + 1000) }, done);
+      },
+      status2(insert2, done) {
+        hookStatus(collection, intervalTime, done);
+      },
+      verify2(status2, done) {
+        t.equal(status2.complete, 1, 'returns hooks completed after interval time');
+        done();
       }
-      results.push(msg);
-    });
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
-    server.method('dodgeball', (data, callback) => {
-      setTimeout(() => {
-        callback();
-      }, 1000);
-    });
-    server.methods.hook('before school', {}, {
-      runEvery: 'every 2 second',
-      hookId: 'beforeSchool'
-    });
-    server.methods.hook('after school', {}, {
-      runEvery: 'every 2 second',
-      recurringId: 'afterSchool'
+    }, () => {
+      cleanup(t);
     });
   });
 });
