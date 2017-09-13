@@ -30,7 +30,7 @@ server.register({
     recurring: {
       doAfterSchool: {
         hook: 'after:school',
-        every: 'every 3 minutes'
+        schedule: 'every 3 minutes'
       }
     }
   }

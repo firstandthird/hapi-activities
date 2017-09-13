@@ -69,7 +69,7 @@ exports.register = (server, options, next) => {
             const hookObj = options.recurring[hookId];
             const hookData = hookObj.data || {};
             hookFunction(hookObj.hook, hookData, {
-              runEvery: hookObj.every,
+              runEvery: hookObj.schedule,
               hookId
             });
           });
