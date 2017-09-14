@@ -6,6 +6,7 @@ const defaults = {
     host: 'mongodb://localhost:27017',
     collectionName: 'hapi-hooks'
   },
+  timezone: 'America/Los_Angeles',
   timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
   interval: 5 * 60 * 1000, // 5 minutes
   log: false,
