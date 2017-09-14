@@ -22,6 +22,8 @@ server.method('playSoftball', (data, next) => {
 server.register({
   register: hapiHooks,
   options: {
+    log: true,
+    interval: 700,
     hooks: {
       'after:school': [
         'playSoftball'

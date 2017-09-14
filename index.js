@@ -100,7 +100,8 @@ exports.register = (server, options, next) => {
         setTimeout(timer, settings.interval);
       }
     };
-    timer();
+
+    setTimeout(timer, settings.interval);
     // now tell hapi that we're done registering the plugin!
     next();
   });
