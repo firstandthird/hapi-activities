@@ -6,6 +6,7 @@ const defaults = {
     host: 'mongodb://localhost:27017',
     collectionName: 'hapi-hooks'
   },
+  timezone: 'America/Los_Angeles',
   timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
   interval: 5 * 60 * 1000, // 5 minutes
   log: false,
@@ -59,6 +60,24 @@ exports.register = (server, options, next) => {
           }
           callback(err, response.performActions);
         });
+      });
+    }
+
+    if (options.recurring) {
+      const hookFunction = (options.decorate) ? server.hook : server.methods.hook;
+      server.ext({
+        type: 'onPostStart',
+        method(serv, next) {
+          Object.keys(options.recurring).forEach(hookId => {
+            const hookObj = options.recurring[hookId];
+            const hookData = hookObj.data || {};
+            hookFunction(hookObj.hook, hookData, {
+              runEvery: hookObj.schedule,
+              hookId
+            });
+          });
+          next();
+        }
       });
     }
 

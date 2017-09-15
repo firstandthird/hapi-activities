@@ -461,6 +461,40 @@ test('will not add an hook if it does not exist', (t) => {
   });
 });
 
+test('will allow recurring hooks to be passed in the config', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: true,
+    interval: 200,
+    hooks: {
+      'after:school': [
+        'baseball'
+      ]
+    },
+    recurring: {
+      doBaseBall: {
+        hook: 'after:school',
+        schedule: 'every 1 second'
+      }
+    }
+  }, (cleanup, server, collection, db) => {
+    let numberCalls = 0;
+    server.method('baseball', (data, next) => {
+      numberCalls++;
+      console.log('Play Ball!');
+      if (numberCalls > 1) {
+        return cleanup(t);
+      }
+
+      next();
+    });
+    server.start();
+  });
+});
+
 test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
