@@ -24,6 +24,7 @@ exports.register = (server, options, next) => {
     // initialize the server object:
     const collection = db.collection(settings.mongo.collectionName);
     collection.createIndex({ status: 1 }, { background: true }, (indexErr, result) => {
+      /* istanbul ignore if */
       if (indexErr) {
         throw indexErr;
       }
@@ -52,6 +53,7 @@ exports.register = (server, options, next) => {
       });
       server.method('retryHook', (hookId, callback) => {
         retry(server, settings, collection, hookId, (err, response) => {
+          /* istanbul ignore if */
           if (err) {
             return callback(err);
           }
@@ -74,6 +76,7 @@ exports.register = (server, options, next) => {
         return;
       }
       queryHooks(server, settings, collection, (err) => {
+        /* istanbul ignore if */
         if (err) {
           server.log(['hapi-hooks', 'error'], err);
         }

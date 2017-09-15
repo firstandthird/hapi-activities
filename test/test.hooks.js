@@ -3,6 +3,7 @@ const setup = require('./setup.js');
 const test = require('tap').test;
 const async = require('async');
 const hookStatus = require('../lib/hookStatus');
+const retry = require('../lib/retry');
 
 test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
@@ -538,6 +539,86 @@ test('hook status only shows hooks that have completed since last run', (t) => {
         done();
       }
     }, () => {
+      cleanup(t);
+    });
+  });
+});
+
+test('will not retry if status was not "failed" ', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: true,
+    interval: 200,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ]
+    }
+  }, (cleanup, server, collection, db) => {
+    async.autoInject({
+      insert1(done) {
+        collection.insert({ _id: 'myHookId', status: 'complete' }, done);
+      },
+      retry1(insert1, done) {
+        let called;
+        server.on('log', (data) => {
+          // only check this first time log is called:
+          if (!called) {
+            called = true;
+            t.equal(data.tags[1], 'repeat', 'logs repeat message');
+            t.notEqual(data.data.message.indexOf('myHookId did not fail'), -1, 'notifies hook id did not fail');
+          }
+        });
+        retry(server, {}, collection, 'myHookId', (err) => {
+          t.notEqual(err, null, 'calls callback if hook id was not "failed"');
+          done();
+        });
+      },
+    }, () => {
+      cleanup(t);
+    });
+  });
+});
+
+test('will return error if hook id does not exist', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000,
+    hooks: {
+      repeat: [
+        'repeatableHook()',
+      ]
+    }
+  }, (cleanup, server, collection) => {
+    server.methods.retryHook('does_not_exist', (err, res) => {
+      t.notEqual(err, null);
+      cleanup(t);
+    });
+  });
+});
+
+test('will return error if hook id does not exist when used as decoration', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000,
+    decorate: true,
+    hooks: {
+      repeat: [
+        'repeatableHook()',
+      ]
+    }
+  }, (cleanup, server, collection) => {
+    server.retryHook('does_not_exist', (err, res) => {
+      t.notEqual(err, null);
       cleanup(t);
     });
   });
