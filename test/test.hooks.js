@@ -416,7 +416,6 @@ tap.test('supports the runEvery option', (t) => {
       if (numberOfCalls.kickball > 1) {
         t.ok(numberOfCalls.kickball > 1);
         done(t);
-        return;
       }
       callback();
     });
@@ -425,7 +424,7 @@ tap.test('supports the runEvery option', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runEvery: 'every 2 seconds',
+      runEvery: 'every 1 seconds',
       hookId: 'afterSchool'
     });
   });
@@ -534,7 +533,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
       collectionName: 'hapi-hooks-test'
     },
     log: true,
-    interval: 100,
+    interval: 1000,
     hooks: {
       'before school': [
         'dodgeball'
@@ -552,9 +551,9 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     server.method('dodgeball', (data, callback) => {
       setTimeout(() => {
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
+        callback();
         done(t);
       }, 250);
-      callback();
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',

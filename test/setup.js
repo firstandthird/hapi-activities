@@ -27,7 +27,7 @@ module.exports = (options, callback) => {
     register(server, done) {
       server.register({
         register: hapiHooks,
-        options
+        options: Object.assign({}, options)
       }, done);
     },
     start(server, register, done) {
