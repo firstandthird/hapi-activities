@@ -1,10 +1,10 @@
 {
   "name": "hapi-hooks",
-  "version": "1.5.0",
+  "version": "1.7.0",
   "description": "Hapi plugin for doing deferred processes",
   "main": "index.js",
   "scripts": {
-    "test": "tap --cov test/test.*.js",
+    "test": "tap test/test.*.js",
     "lint": "eslint **/*.js"
   },
   "keywords": [
@@ -14,8 +14,9 @@
   "author": "First+Third",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.1.1",
+    "async": "^2.5.0",
     "later": "^1.2.0",
+    "later-timezone": "^1.0.0",
     "lodash.get": "^4.4.2",
     "mongodb": "^2.2.10",
     "str2fn": "^2.0.0"

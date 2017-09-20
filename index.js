@@ -6,6 +6,7 @@ const defaults = {
     host: 'mongodb://localhost:27017',
     collectionName: 'hapi-hooks'
   },
+  timezone: 'America/Los_Angeles',
   timeout: 30 * 1000, // max time an action can take, default is 30 secs, set to false for infinity
   interval: 5 * 60 * 1000, // 5 minutes
   log: false,
@@ -28,6 +29,7 @@ exports.register = (server, options, next) => {
     // initialize the server object:
     const collection = db.collection(settings.mongo.collectionName);
     collection.createIndex({ status: 1 }, { background: true }, (indexErr, result) => {
+      /* istanbul ignore if */
       if (indexErr) {
         throw indexErr;
       }
@@ -56,11 +58,30 @@ exports.register = (server, options, next) => {
       });
       server.method('retryHook', (hookId, callback) => {
         retry(server, settings, collection, hookId, (err, response) => {
+          /* istanbul ignore if */
           if (err) {
             return callback(err);
           }
           callback(err, response.performActions);
         });
+      });
+    }
+
+    if (options.recurring) {
+      const hookFunction = (options.decorate) ? server.hook : server.methods.hook;
+      server.ext({
+        type: 'onPostStart',
+        method(serv, done) {
+          Object.keys(options.recurring).forEach(hookId => {
+            const hookObj = options.recurring[hookId];
+            const hookData = hookObj.data || {};
+            hookFunction(hookObj.hook, hookData, {
+              runEvery: hookObj.schedule,
+              hookId
+            });
+          });
+          done();
+        }
       });
     }
 
@@ -70,7 +91,7 @@ exports.register = (server, options, next) => {
       type: 'onPreStop',
       method: (request, done) => {
         continueProcessing = false;
-        done();
+        db.close(false, done);
       }
     });
     const timer = () => {
@@ -78,6 +99,7 @@ exports.register = (server, options, next) => {
         return;
       }
       queryHooks(server, settings, collection, (err) => {
+        /* istanbul ignore if */
         if (err) {
           server.log(['hapi-hooks', 'error'], err);
         }
