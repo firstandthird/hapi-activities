@@ -389,12 +389,15 @@ tap.only('supports the runEvery option', (t) => {
       kickball: 0
     };
 
+    console.error(numberOfCalls);
+
     server.method('kickball', (data, callback) => {
+      console.error(numberOfCalls);
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
         t.ok(numberOfCalls.kickball > 1);
         cleanup(t);
-        return callback();
+        return;
       }
       callback();
     });
@@ -403,7 +406,7 @@ tap.only('supports the runEvery option', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runEvery: 'every 2 second',
+      runEvery: 'every 2 seconds',
       hookId: 'afterSchool'
     });
   });
