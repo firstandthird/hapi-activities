@@ -517,7 +517,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
       if (numberCalls > 1) {
         t.ok(numberCalls > 1);
         done(t);
-        return;
+        return next();
       }
 
       next();
@@ -552,7 +552,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
         callback();
         done(t);
-      }, 250);
+      }, 500);
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
