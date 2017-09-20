@@ -7,10 +7,10 @@ const hapiHooks = require('../');
 module.exports = (options, callback) => {
   async.autoInject({
     db(done) {
-      mongo.connect('mongodb://localhost:27017', done);
+      mongo.connect('mongodb://localhost:27017/hooks', done);
     },
     collection(db, done) {
-      done(null, db.collection('hapi-hooks-test'));
+      done(null, db.collection(options.mongo.collectionName));
     },
     drop(collection, db, done) {
       collection.drop(() => done());

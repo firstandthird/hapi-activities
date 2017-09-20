@@ -8,7 +8,7 @@ const retry = require('../lib/retry');
 tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -94,7 +94,7 @@ tap.test('adds a server method that will process another server method and data'
   let numberOfCalls = 0;
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -121,7 +121,7 @@ tap.test('adds a server method that will process another server method and data'
 tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -181,7 +181,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
 tap.test('supports foo.bar for methods', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -209,7 +209,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
   setup({
     decorate: true,
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -254,7 +254,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
 tap.test('can handle and report callback errors during an action', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -293,7 +293,7 @@ tap.test('can handle and report hook errors during an action', (t) => {
   setup({
     log: true,
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -327,7 +327,7 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
   let passedData = null;
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -360,7 +360,7 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
 tap.test('supports the runAfter option', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -381,7 +381,7 @@ tap.test('supports the runAfter option', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runAfter: new Date(new Date().getTime() + 3000)
+      runAfter: new Date(new Date().getTime() + 250)
     });
     setTimeout(() => {
       t.equal(numberOfCalls.kickball, 0);
@@ -396,7 +396,7 @@ tap.test('supports the runAfter option', (t) => {
 tap.test('supports the runEvery option', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -434,7 +434,7 @@ tap.test('supports the runEvery option', (t) => {
 tap.test('supports hookId', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -480,7 +480,7 @@ tap.test('supports hookId', (t) => {
 tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 100,
@@ -496,7 +496,7 @@ tap.test('will not add an hook if it does not exist', (t) => {
 tap.test('will allow recurring hooks to be passed in the config', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     log: true,
@@ -530,7 +530,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
 tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     log: true,
@@ -570,7 +570,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
 tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     log: true,
@@ -614,7 +614,7 @@ tap.test('hook status only shows hooks that have completed since last run', (t) 
 tap.test('will not retry if status was not "failed" ', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     log: true,
@@ -653,7 +653,7 @@ tap.test('will not retry if status was not "failed" ', (t) => {
 tap.test('will return error if hook id does not exist', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 1000,
@@ -673,7 +673,7 @@ tap.test('will return error if hook id does not exist', (t) => {
 tap.test('will return error if hook id does not exist when used as decoration', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 1000,
@@ -698,7 +698,7 @@ tap.test('retry a hook from id', (t) => {
     startup(done) {
       setup({
         mongo: {
-          host: 'mongodb://localhost:27017',
+          host: 'mongodb://localhost:27017/hooks',
           collectionName: 'hapi-hooks-test'
         },
         interval: 1000,
