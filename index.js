@@ -87,7 +87,7 @@ exports.register = (server, options, next) => {
       type: 'onPreStop',
       method: (request, done) => {
         continueProcessing = false;
-        done();
+        db.close(false, done);
       }
     });
     const timer = () => {

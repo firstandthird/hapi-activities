@@ -11,7 +11,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball',
@@ -19,7 +19,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
         'pottery',
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, allDone) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -41,34 +41,56 @@ tap.test('adds a server method that will process an hook composed of actions', (
       name: 'bob',
       age: 7
     });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1);
-      t.equal(numberOfCalls.trumpet, 7);
-      t.equal(numberOfCalls.pottery, 1);
-      collection.findOne({}, (err, hook) => {
-        t.equal(err, null);
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
+    async.autoInject({
+      wait1(done) {
+        setTimeout(done, 200);
+      },
+      verify1(wait1, done) {
+        t.equal(numberOfCalls.kickball, 1);
+        t.equal(numberOfCalls.trumpet, 7);
+        t.equal(numberOfCalls.pottery, 1);
+        done();
+      },
+      query1(verify1, done) {
+        collection.findOne({}, done);
+      },
+      verify2(query1, done) {
+        t.equal(query1.status, 'complete');
+        t.equal(query1.results.length, 3);
+        done();
+      },
+      hook(verify2, done) {
         server.methods.hook('after school', {
           name: 'sven',
           age: 5
         });
-        setTimeout(() => {
-          t.equal(numberOfCalls.kickball, 2);
-          t.equal(numberOfCalls.trumpet, 5);
-          t.equal(numberOfCalls.pottery, 2);
-          collection.findOne({}, (err2, hook2) => {
-            t.equal(err2, null);
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
-            cleanup(t);
-          });
-        }, 2500);
-      });
-    }, 2500);
+        done();
+      },
+      wait2(hook, done) {
+        setTimeout(done, 200);
+      },
+      verify3(wait2, done) {
+        t.equal(numberOfCalls.kickball, 2);
+        t.equal(numberOfCalls.trumpet, 5);
+        t.equal(numberOfCalls.pottery, 2);
+        done();
+      },
+      query2(wait2, done) {
+        collection.findOne({}, done);
+      },
+      verify4(query2, done) {
+        t.equal(query2.status, 'complete');
+        t.equal(query2.results.length, 3);
+        done();
+      }
+    }, (err, results) => {
+      t.equal(err, null);
+      allDone(t);
+    });
   });
 });
 
+/*
 tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
@@ -372,7 +394,7 @@ tap.test('supports the runAfter option', (t) => {
   });
 });
 
-tap.only('supports the runEvery option', (t) => {
+tap.test('supports the runEvery option', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -721,3 +743,4 @@ tap.test('retry a hook from id', (t) => {
     result.startup.cleanup(t);
   });
 });
+*/
