@@ -431,7 +431,7 @@ tap.test('supports the runEvery option', (t) => {
   });
 });
 
-tap.only('supports hookId', (t) => {
+tap.test('supports hookId', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017/hooks',
