@@ -291,7 +291,7 @@ tap.test('can handle and report callback errors during an action', (t) => {
 
 tap.test('can handle and report hook errors during an action', (t) => {
   setup({
-    log: true,
+    log: false,
     mongo: {
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
@@ -399,6 +399,7 @@ tap.test('supports the runEvery option', (t) => {
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
+    log: false,
     interval: 100,
     hooks: {
       'after school': [
@@ -430,13 +431,14 @@ tap.test('supports the runEvery option', (t) => {
   });
 });
 
-tap.test('supports hookId', (t) => {
+tap.only('supports hookId', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 100,
+    log: false,
+    interval: 300,
     hooks: {
       'after school': [
         'kickball'
@@ -447,8 +449,10 @@ tap.test('supports hookId', (t) => {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback();
+      setTimeout(() => {
+        numberOfCalls.kickball ++;
+        callback();
+      }, 200);
     });
     server.methods.hook('after school', {
       name: 'bob',
@@ -456,23 +460,18 @@ tap.test('supports hookId', (t) => {
     }, {
       hookId: 'afterSchool'
     });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
-    let waitCycles = 0;
-    const wait = () => setTimeout(() => {
-      waitCycles ++;
-      if (waitCycles > 4) {
-        t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
-        done(t);
-      } else {
-        wait();
-      }
-    }, 250);
-    wait();
+    setTimeout(() => {
+      server.methods.hook('after school', {
+        name: 'bob',
+        age: 7
+      }, {
+        hookId: 'afterSchool'
+      });
+    }, 100);
+    setTimeout(() => {
+      t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
+      done(t);
+    }, 500);
   });
 });
 
@@ -498,7 +497,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
+    log: false,
     interval: 100,
     hooks: {
       'after:school': [
@@ -532,7 +531,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
+    log: false,
     interval: 1000,
     hooks: {
       'before school': [
@@ -572,7 +571,7 @@ tap.test('hook status only shows hooks that have completed since last run', (t) 
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
+    log: false,
     interval: 200,
     hooks: {
       'before school': [
@@ -616,14 +615,14 @@ tap.test('will not retry if status was not "failed" ', (t) => {
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
+    log: false,
     interval: 200,
     hooks: {
       'before school': [
         'dodgeball'
       ]
     }
-  }, (server, collection, db, done) => {
+  }, (server, collection, db, allDone) => {
     async.autoInject({
       insert1(done) {
         collection.insert({ _id: 'myHookId', status: 'complete' }, done);
@@ -644,7 +643,7 @@ tap.test('will not retry if status was not "failed" ', (t) => {
         });
       },
     }, () => {
-      done(t);
+      allDone(t);
     });
   });
 });

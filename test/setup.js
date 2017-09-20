@@ -40,13 +40,10 @@ module.exports = (options, callback) => {
 
     const cleanup = (test, endMethod) => {
       async.autoInject({
-        drop(done) {
-          results.collection.drop(() => done());
-        },
         stop(done) {
           results.server.stop({ timeout: 250 }, done);
         },
-        close(stop, drop, done) {
+        close(stop, done) {
           results.db.close(true, done);
         },
         end(close, done) {
