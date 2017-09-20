@@ -90,7 +90,6 @@ tap.test('adds a server method that will process an hook composed of actions', (
   });
 });
 
-/*
 tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
@@ -98,13 +97,13 @@ tap.test('adds a server method that will process another server method and data'
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'user.add': [
         'addToMailchimp("someId", user.email)',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.method('addToMailchimp', (id, email, callback) => {
       t.equal(email, 'bob@bob.com', 'resolves and passes data to method call');
       t.equal(id, 'someId', 'resolves and passes data to method');
@@ -114,8 +113,8 @@ tap.test('adds a server method that will process another server method and data'
     server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
     setTimeout(() => {
       t.equal(numberOfCalls, 1, 'calls correct number of times');
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
 
@@ -125,7 +124,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball',
@@ -133,7 +132,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
         'pottery',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -171,11 +170,11 @@ tap.test('adds a server method that will process an hook composed of actions', (
             t.equal(err2, null);
             t.equal(hook2.status, 'complete');
             t.equal(hook2.results.length, 3);
-            cleanup(t);
+            done(t);
           });
-        }, 2500);
+        }, 250);
       });
-    }, 2500);
+    }, 250);
   });
 });
 
@@ -185,11 +184,11 @@ tap.test('supports foo.bar for methods', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 100, // 1 second
+    interval: 100,
     hooks: {
       'after school': ['foo.bar']
     }
-  }, (cleanup, server) => {
+  }, (server, collection, db, done) => {
     let numberOfCalls = 0;
     server.method('foo.bar', (data, callback) => {
       numberOfCalls ++;
@@ -201,8 +200,8 @@ tap.test('supports foo.bar for methods', (t) => {
     });
     setTimeout(() => {
       t.equal(numberOfCalls > 0, true);
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
 
@@ -213,7 +212,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball',
@@ -221,7 +220,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
         'pottery',
       ]
     }
-  }, (cleanup, server) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -247,8 +246,8 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
       t.equal(numberOfCalls.kickball, 1);
       t.equal(numberOfCalls.trumpet, 7);
       t.equal(numberOfCalls.pottery, 1);
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
 
@@ -258,11 +257,11 @@ tap.test('can handle and report callback errors during an action', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 500,
+    interval: 100,
     hooks: {
       'before school': ['breakfast']
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       breakfast: 0
     };
@@ -284,9 +283,9 @@ tap.test('can handle and report callback errors during an action', (t) => {
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
         t.equal(hook.results[0].error, undefined);
-        cleanup(t);
+        done(t);
       });
-    }, 3000);
+    }, 250);
   });
 });
 
@@ -297,11 +296,11 @@ tap.test('can handle and report hook errors during an action', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 500,
+    interval: 100,
     hooks: {
       'before school': ['breakfast']
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       breakfast: 0
     };
@@ -319,8 +318,8 @@ tap.test('can handle and report hook errors during an action', (t) => {
     });
     setTimeout(() => {
       t.equal(numberOfCalls.breakfast, 1);
-      cleanup(t);
-    }, 3000);
+      done(t);
+    }, 250);
   });
 });
 
@@ -331,14 +330,14 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       models: [{
         method: 'airplanes',
         data: { data1: 'is data 1' }
       }]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.method('airplanes', (data, callback) => {
       passedData = data;
       callback(null, passedData);
@@ -352,9 +351,9 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
       server.methods.hook('models', { data1: 'is data 2' });
       setTimeout(() => {
         t.equal(passedData.data1, 'is data 2');
-        cleanup(t);
-      }, 2500);
-    }, 2500);
+        done(t);
+      }, 250);
+    }, 250);
   });
 });
 
@@ -364,13 +363,13 @@ tap.test('supports the runAfter option', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0
     };
@@ -388,9 +387,9 @@ tap.test('supports the runAfter option', (t) => {
       t.equal(numberOfCalls.kickball, 0);
       setTimeout(() => {
         t.equal(numberOfCalls.kickball, 1);
-        cleanup(t);
-      }, 2500);
-    }, 2500);
+        done(t);
+      }, 250);
+    }, 250);
   });
 });
 
@@ -400,25 +399,23 @@ tap.test('supports the runEvery option', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 200,
+    interval: 100,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0
     };
 
-    console.error(numberOfCalls);
 
     server.method('kickball', (data, callback) => {
-      console.error(numberOfCalls);
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
         t.ok(numberOfCalls.kickball > 1);
-        cleanup(t);
+        done(t);
         return;
       }
       callback();
@@ -440,13 +437,13 @@ tap.test('supports hookId', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000,
+    interval: 100,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0
     };
@@ -471,11 +468,11 @@ tap.test('supports hookId', (t) => {
       waitCycles ++;
       if (waitCycles > 4) {
         t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
-        cleanup(t);
+        done(t);
       } else {
         wait();
       }
-    }, 2000);
+    }, 250);
     wait();
   });
 });
@@ -486,13 +483,13 @@ tap.test('will not add an hook if it does not exist', (t) => {
       host: 'mongodb://localhost:27017',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {} // no hooks
-  }, (cleanup, server) => {
+  }, (server, collection, db, done) => {
     server.methods.hook('perpetual motion', {});
     setTimeout(() => {
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
 
@@ -503,7 +500,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
       collectionName: 'hapi-hooks-test'
     },
     log: true,
-    interval: 200,
+    interval: 100,
     hooks: {
       'after:school': [
         'baseball'
@@ -515,19 +512,18 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
         schedule: 'every 1 second'
       }
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     let numberCalls = 0;
     server.method('baseball', (data, next) => {
       numberCalls++;
       if (numberCalls > 1) {
         t.ok(numberCalls > 1);
-        cleanup(t);
+        done(t);
         return;
       }
 
       next();
     });
-    server.start();
   });
 });
 
@@ -538,7 +534,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
       collectionName: 'hapi-hooks-test'
     },
     log: true,
-    interval: 200,
+    interval: 100,
     hooks: {
       'before school': [
         'dodgeball'
@@ -547,7 +543,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     let kickball = 0;
     server.method('kickball', (data, callback) => {
       kickball ++;
@@ -556,8 +552,9 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     server.method('dodgeball', (data, callback) => {
       setTimeout(() => {
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
-        cleanup(t);
-      }, 6000);
+        done(t);
+      }, 250);
+      callback();
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
@@ -583,7 +580,7 @@ tap.test('hook status only shows hooks that have completed since last run', (t) 
         'dodgeball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, allDone) => {
     const intervalTime = new Date();
     async.autoInject({
       insert1(done) {
@@ -609,7 +606,7 @@ tap.test('hook status only shows hooks that have completed since last run', (t) 
         done();
       }
     }, () => {
-      cleanup(t);
+      allDone(t);
     });
   });
 });
@@ -627,7 +624,7 @@ tap.test('will not retry if status was not "failed" ', (t) => {
         'dodgeball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     async.autoInject({
       insert1(done) {
         collection.insert({ _id: 'myHookId', status: 'complete' }, done);
@@ -648,7 +645,7 @@ tap.test('will not retry if status was not "failed" ', (t) => {
         });
       },
     }, () => {
-      cleanup(t);
+      done(t);
     });
   });
 });
@@ -665,10 +662,10 @@ tap.test('will return error if hook id does not exist', (t) => {
         'repeatableHook()',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.methods.retryHook('does_not_exist', (err, res) => {
       t.notEqual(err, null);
-      cleanup(t);
+      done(t);
     });
   });
 });
@@ -686,10 +683,10 @@ tap.test('will return error if hook id does not exist when used as decoration', 
         'repeatableHook()',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.retryHook('does_not_exist', (err, res) => {
       t.notEqual(err, null);
-      cleanup(t);
+      done(t);
     });
   });
 });
@@ -710,7 +707,7 @@ tap.test('retry a hook from id', (t) => {
             'repeatableHook()',
           ]
         }
-      }, (cleanup, server, collection) => {
+      }, (server, collection, db, cleanup) => {
         // this method  won't work until someone changes 'key':
         server.method('repeatableHook', (callback) => {
           if (key === 0) {
@@ -743,4 +740,3 @@ tap.test('retry a hook from id', (t) => {
     result.startup.cleanup(t);
   });
 });
-*/

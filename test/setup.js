@@ -29,6 +29,9 @@ module.exports = (options, callback) => {
         register: hapiHooks,
         options
       }, done);
+    },
+    start(server, register, done) {
+      server.start(done);
     }
   }, (err, results) => {
     if (err) {
