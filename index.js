@@ -67,7 +67,7 @@ exports.register = (server, options, next) => {
       const hookFunction = (options.decorate) ? server.hook : server.methods.hook;
       server.ext({
         type: 'onPostStart',
-        method(serv, next) {
+        method(serv, done) {
           Object.keys(options.recurring).forEach(hookId => {
             const hookObj = options.recurring[hookId];
             const hookData = hookObj.data || {};
@@ -76,7 +76,7 @@ exports.register = (server, options, next) => {
               hookId
             });
           });
-          next();
+          done();
         }
       });
     }
@@ -87,7 +87,7 @@ exports.register = (server, options, next) => {
       type: 'onPreStop',
       method: (request, done) => {
         continueProcessing = false;
-        done();
+        db.close(false, done);
       }
     });
     const timer = () => {

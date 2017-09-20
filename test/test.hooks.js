@@ -1,17 +1,17 @@
 'use strict';
 const setup = require('./setup.js');
-const test = require('tap').test;
+const tap = require('tap');
 const async = require('async');
 const hookStatus = require('../lib/hookStatus');
 const retry = require('../lib/retry');
 
-test('adds a server method that will process an hook composed of actions', (t) => {
+tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball',
@@ -19,7 +19,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
         'pottery',
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, allDone) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -41,46 +41,69 @@ test('adds a server method that will process an hook composed of actions', (t) =
       name: 'bob',
       age: 7
     });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1);
-      t.equal(numberOfCalls.trumpet, 7);
-      t.equal(numberOfCalls.pottery, 1);
-      collection.findOne({}, (err, hook) => {
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
+    async.autoInject({
+      wait1(done) {
+        setTimeout(done, 200);
+      },
+      verify1(wait1, done) {
+        t.equal(numberOfCalls.kickball, 1);
+        t.equal(numberOfCalls.trumpet, 7);
+        t.equal(numberOfCalls.pottery, 1);
+        done();
+      },
+      query1(verify1, done) {
+        collection.findOne({}, done);
+      },
+      verify2(query1, done) {
+        t.equal(query1.status, 'complete');
+        t.equal(query1.results.length, 3);
+        done();
+      },
+      hook(verify2, done) {
         server.methods.hook('after school', {
           name: 'sven',
           age: 5
         });
-        setTimeout(() => {
-          t.equal(numberOfCalls.kickball, 2);
-          t.equal(numberOfCalls.trumpet, 5);
-          t.equal(numberOfCalls.pottery, 2);
-          collection.findOne({}, (err, hook2) => {
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
-            cleanup(t);
-          });
-        }, 2500);
-      });
-    }, 2500);
+        done();
+      },
+      wait2(hook, done) {
+        setTimeout(done, 200);
+      },
+      verify3(wait2, done) {
+        t.equal(numberOfCalls.kickball, 2);
+        t.equal(numberOfCalls.trumpet, 5);
+        t.equal(numberOfCalls.pottery, 2);
+        done();
+      },
+      query2(wait2, done) {
+        collection.findOne({}, done);
+      },
+      verify4(query2, done) {
+        t.equal(query2.status, 'complete');
+        t.equal(query2.results.length, 3);
+        done();
+      }
+    }, (err, results) => {
+      t.equal(err, null);
+      allDone(t);
+    });
   });
 });
 
-test('adds a server method that will process another server method and data', (t) => {
+tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'user.add': [
         'addToMailchimp("someId", user.email)',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.method('addToMailchimp', (id, email, callback) => {
       t.equal(email, 'bob@bob.com', 'resolves and passes data to method call');
       t.equal(id, 'someId', 'resolves and passes data to method');
@@ -90,18 +113,18 @@ test('adds a server method that will process another server method and data', (t
     server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
     setTimeout(() => {
       t.equal(numberOfCalls, 1, 'calls correct number of times');
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
 
-test('adds a server method that will process an hook composed of actions', (t) => {
+tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball',
@@ -109,7 +132,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
         'pottery',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -135,6 +158,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
       t.equal(numberOfCalls.kickball > 0, true);
       t.equal(numberOfCalls.pottery > 0, true);
       collection.findOne({}, (err, hook) => {
+        t.equal(err, null);
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 3);
         server.methods.hook('after school', {
@@ -142,28 +166,29 @@ test('adds a server method that will process an hook composed of actions', (t) =
           age: 5
         });
         setTimeout(() => {
-          collection.findOne({}, (err, hook2) => {
+          collection.findOne({}, (err2, hook2) => {
+            t.equal(err2, null);
             t.equal(hook2.status, 'complete');
             t.equal(hook2.results.length, 3);
-            cleanup(t);
+            done(t);
           });
-        }, 2500);
+        }, 250);
       });
-    }, 2500);
+    }, 250);
   });
 });
 
-test('supports foo.bar for methods', (t) => {
+tap.test('supports foo.bar for methods', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 100, // 1 second
+    interval: 100,
     hooks: {
       'after school': ['foo.bar']
     }
-  }, (cleanup, server) => {
+  }, (server, collection, db, done) => {
     let numberOfCalls = 0;
     server.method('foo.bar', (data, callback) => {
       numberOfCalls ++;
@@ -175,18 +200,19 @@ test('supports foo.bar for methods', (t) => {
     });
     setTimeout(() => {
       t.equal(numberOfCalls > 0, true);
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
-test('"decorate" option will register the method with "server.decorate" instead of "server.method"', (t) => {
+
+tap.test('"decorate" option will register the method with "server.decorate" instead of "server.method"', (t) => {
   setup({
     decorate: true,
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball',
@@ -194,7 +220,7 @@ test('"decorate" option will register the method with "server.decorate" instead 
         'pottery',
       ]
     }
-  }, (cleanup, server) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0,
       trumpet: 0,
@@ -220,21 +246,22 @@ test('"decorate" option will register the method with "server.decorate" instead 
       t.equal(numberOfCalls.kickball, 1);
       t.equal(numberOfCalls.trumpet, 7);
       t.equal(numberOfCalls.pottery, 1);
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
-test('can handle and report callback errors during an action', (t) => {
+
+tap.test('can handle and report callback errors during an action', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 500,
+    interval: 100,
     hooks: {
       'before school': ['breakfast']
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       breakfast: 0
     };
@@ -256,24 +283,24 @@ test('can handle and report callback errors during an action', (t) => {
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
         t.equal(hook.results[0].error, undefined);
-        cleanup(t);
+        done(t);
       });
-    }, 3000);
+    }, 250);
   });
 });
 
-test('can handle and report hook errors during an action', (t) => {
+tap.test('can handle and report hook errors during an action', (t) => {
   setup({
-    log: true,
+    log: false,
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 500,
+    interval: 100,
     hooks: {
       'before school': ['breakfast']
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       breakfast: 0
     };
@@ -291,26 +318,26 @@ test('can handle and report hook errors during an action', (t) => {
     });
     setTimeout(() => {
       t.equal(numberOfCalls.breakfast, 1);
-      cleanup(t);
-    }, 3000);
+      done(t);
+    }, 250);
   });
 });
 
-test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
+tap.test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
   let passedData = null;
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       models: [{
         method: 'airplanes',
         data: { data1: 'is data 1' }
       }]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.method('airplanes', (data, callback) => {
       passedData = data;
       callback(null, passedData);
@@ -324,25 +351,25 @@ test('handles actions passed in a { method s: <method>, data: <data> } form', (t
       server.methods.hook('models', { data1: 'is data 2' });
       setTimeout(() => {
         t.equal(passedData.data1, 'is data 2');
-        cleanup(t);
-      }, 2500);
-    }, 2500);
+        done(t);
+      }, 250);
+    }, 250);
   });
 });
 
-test('supports the runAfter option', (t) => {
+tap.test('supports the runAfter option', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0
     };
@@ -354,70 +381,78 @@ test('supports the runAfter option', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runAfter: new Date(new Date().getTime() + 3000)
+      runAfter: new Date(new Date().getTime() + 250)
     });
     setTimeout(() => {
       t.equal(numberOfCalls.kickball, 0);
       setTimeout(() => {
         t.equal(numberOfCalls.kickball, 1);
-        cleanup(t);
-      }, 2500);
-    }, 2500);
+        done(t);
+      }, 250);
+    }, 250);
   });
 });
 
-test('supports the runEvery option', (t) => {
+tap.test('supports the runEvery option', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 200,
+    log: false,
+    interval: 100,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0
     };
+
+
     server.method('kickball', (data, callback) => {
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
-        return cleanup(t);
+        t.ok(numberOfCalls.kickball > 1);
+        done(t);
       }
       callback();
     });
+
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
     }, {
-      runEvery: 'every 2 second',
+      runEvery: 'every 1 seconds',
       hookId: 'afterSchool'
     });
   });
 });
 
-test('supports hookId', (t) => {
+tap.test('supports hookId', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000,
+    log: false,
+    interval: 300,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     const numberOfCalls = {
       kickball: 0
     };
     server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback();
+      setTimeout(() => {
+        numberOfCalls.kickball ++;
+        callback();
+      }, 200);
     });
     server.methods.hook('after school', {
       name: 'bob',
@@ -425,50 +460,45 @@ test('supports hookId', (t) => {
     }, {
       hookId: 'afterSchool'
     });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
-    let waitCycles = 0;
-    const wait = () => setTimeout(() => {
-      waitCycles ++;
-      if (waitCycles > 4) {
-        t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
-        cleanup(t);
-      } else {
-        wait();
-      }
-    }, 2000);
-    wait();
+    setTimeout(() => {
+      server.methods.hook('after school', {
+        name: 'bob',
+        age: 7
+      }, {
+        hookId: 'afterSchool'
+      });
+    }, 100);
+    setTimeout(() => {
+      t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
+      done(t);
+    }, 500);
   });
 });
 
-test('will not add an hook if it does not exist', (t) => {
+tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 1000, // 1 second
+    interval: 100,
     hooks: {} // no hooks
-  }, (cleanup, server) => {
+  }, (server, collection, db, done) => {
     server.methods.hook('perpetual motion', {});
     setTimeout(() => {
-      cleanup(t);
-    }, 2500);
+      done(t);
+    }, 250);
   });
 });
 
-test('will allow recurring hooks to be passed in the config', (t) => {
+tap.test('will allow recurring hooks to be passed in the config', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
-    interval: 200,
+    log: false,
+    interval: 100,
     hooks: {
       'after:school': [
         'baseball'
@@ -480,29 +510,29 @@ test('will allow recurring hooks to be passed in the config', (t) => {
         schedule: 'every 1 second'
       }
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     let numberCalls = 0;
     server.method('baseball', (data, next) => {
       numberCalls++;
-      console.log('Play Ball!');
       if (numberCalls > 1) {
-        return cleanup(t);
+        t.ok(numberCalls > 1);
+        done(t);
+        return next();
       }
 
       next();
     });
-    server.start();
   });
 });
 
-test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
+tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
-    interval: 200,
+    log: false,
+    interval: 1000,
     hooks: {
       'before school': [
         'dodgeball'
@@ -511,7 +541,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
         'kickball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, done) => {
     let kickball = 0;
     server.method('kickball', (data, callback) => {
       kickball ++;
@@ -520,8 +550,9 @@ test('will wait to process next batch of hooks until all previous hooks are done
     server.method('dodgeball', (data, callback) => {
       setTimeout(() => {
         t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
-        cleanup(t);
-      }, 6000);
+        callback();
+        done(t);
+      }, 500);
     });
     server.methods.hook('before school', {}, {
       runEvery: 'every 2 second',
@@ -534,20 +565,20 @@ test('will wait to process next batch of hooks until all previous hooks are done
   });
 });
 
-test('hook status only shows hooks that have completed since last run', (t) => {
+tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
+    log: false,
     interval: 200,
     hooks: {
       'before school': [
         'dodgeball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, allDone) => {
     const intervalTime = new Date();
     async.autoInject({
       insert1(done) {
@@ -573,25 +604,25 @@ test('hook status only shows hooks that have completed since last run', (t) => {
         done();
       }
     }, () => {
-      cleanup(t);
+      allDone(t);
     });
   });
 });
 
-test('will not retry if status was not "failed" ', (t) => {
+tap.test('will not retry if status was not "failed" ', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    log: true,
+    log: false,
     interval: 200,
     hooks: {
       'before school': [
         'dodgeball'
       ]
     }
-  }, (cleanup, server, collection, db) => {
+  }, (server, collection, db, allDone) => {
     async.autoInject({
       insert1(done) {
         collection.insert({ _id: 'myHookId', status: 'complete' }, done);
@@ -612,15 +643,15 @@ test('will not retry if status was not "failed" ', (t) => {
         });
       },
     }, () => {
-      cleanup(t);
+      allDone(t);
     });
   });
 });
 
-test('will return error if hook id does not exist', (t) => {
+tap.test('will return error if hook id does not exist', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 1000,
@@ -629,18 +660,18 @@ test('will return error if hook id does not exist', (t) => {
         'repeatableHook()',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.methods.retryHook('does_not_exist', (err, res) => {
       t.notEqual(err, null);
-      cleanup(t);
+      done(t);
     });
   });
 });
 
-test('will return error if hook id does not exist when used as decoration', (t) => {
+tap.test('will return error if hook id does not exist when used as decoration', (t) => {
   setup({
     mongo: {
-      host: 'mongodb://localhost:27017',
+      host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
     interval: 1000,
@@ -650,22 +681,22 @@ test('will return error if hook id does not exist when used as decoration', (t) 
         'repeatableHook()',
       ]
     }
-  }, (cleanup, server, collection) => {
+  }, (server, collection, db, done) => {
     server.retryHook('does_not_exist', (err, res) => {
       t.notEqual(err, null);
-      cleanup(t);
+      done(t);
     });
   });
 });
 
-test('retry a hook from id', (t) => {
+tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
   async.autoInject({
     startup(done) {
       setup({
         mongo: {
-          host: 'mongodb://localhost:27017',
+          host: 'mongodb://localhost:27017/hooks',
           collectionName: 'hapi-hooks-test'
         },
         interval: 1000,
@@ -674,7 +705,7 @@ test('retry a hook from id', (t) => {
             'repeatableHook()',
           ]
         }
-      }, (cleanup, server, collection) => {
+      }, (server, collection, db, cleanup) => {
         // this method  won't work until someone changes 'key':
         server.method('repeatableHook', (callback) => {
           if (key === 0) {
@@ -704,6 +735,6 @@ test('retry a hook from id', (t) => {
     t.equal(numberOfCalls > 0, true);
     t.equal(result.retry.results.length, 1);
     t.equal(result.retry.results[0].output, true);
-    result.startup.cleanup(t, process.exit);
+    result.startup.cleanup(t);
   });
 });
