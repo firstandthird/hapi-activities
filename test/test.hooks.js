@@ -1,11 +1,11 @@
 'use strict';
 const setup = require('./setup.js');
-const test = require('tap').test;
+const tap = require('tap');
 const async = require('async');
 const hookStatus = require('../lib/hookStatus');
 const retry = require('../lib/retry');
 
-test('adds a server method that will process an hook composed of actions', (t) => {
+tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -46,6 +46,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
       t.equal(numberOfCalls.trumpet, 7);
       t.equal(numberOfCalls.pottery, 1);
       collection.findOne({}, (err, hook) => {
+        t.equal(err, null);
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 3);
         server.methods.hook('after school', {
@@ -56,7 +57,8 @@ test('adds a server method that will process an hook composed of actions', (t) =
           t.equal(numberOfCalls.kickball, 2);
           t.equal(numberOfCalls.trumpet, 5);
           t.equal(numberOfCalls.pottery, 2);
-          collection.findOne({}, (err, hook2) => {
+          collection.findOne({}, (err2, hook2) => {
+            t.equal(err2, null);
             t.equal(hook2.status, 'complete');
             t.equal(hook2.results.length, 3);
             cleanup(t);
@@ -67,7 +69,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
   });
 });
 
-test('adds a server method that will process another server method and data', (t) => {
+tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
     mongo: {
@@ -95,7 +97,7 @@ test('adds a server method that will process another server method and data', (t
   });
 });
 
-test('adds a server method that will process an hook composed of actions', (t) => {
+tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -135,6 +137,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
       t.equal(numberOfCalls.kickball > 0, true);
       t.equal(numberOfCalls.pottery > 0, true);
       collection.findOne({}, (err, hook) => {
+        t.equal(err, null);
         t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 3);
         server.methods.hook('after school', {
@@ -142,7 +145,8 @@ test('adds a server method that will process an hook composed of actions', (t) =
           age: 5
         });
         setTimeout(() => {
-          collection.findOne({}, (err, hook2) => {
+          collection.findOne({}, (err2, hook2) => {
+            t.equal(err2, null);
             t.equal(hook2.status, 'complete');
             t.equal(hook2.results.length, 3);
             cleanup(t);
@@ -153,7 +157,7 @@ test('adds a server method that will process an hook composed of actions', (t) =
   });
 });
 
-test('supports foo.bar for methods', (t) => {
+tap.test('supports foo.bar for methods', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -179,7 +183,8 @@ test('supports foo.bar for methods', (t) => {
     }, 2500);
   });
 });
-test('"decorate" option will register the method with "server.decorate" instead of "server.method"', (t) => {
+
+tap.test('"decorate" option will register the method with "server.decorate" instead of "server.method"', (t) => {
   setup({
     decorate: true,
     mongo: {
@@ -224,7 +229,8 @@ test('"decorate" option will register the method with "server.decorate" instead 
     }, 2500);
   });
 });
-test('can handle and report callback errors during an action', (t) => {
+
+tap.test('can handle and report callback errors during an action', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -262,7 +268,7 @@ test('can handle and report callback errors during an action', (t) => {
   });
 });
 
-test('can handle and report hook errors during an action', (t) => {
+tap.test('can handle and report hook errors during an action', (t) => {
   setup({
     log: true,
     mongo: {
@@ -296,7 +302,7 @@ test('can handle and report hook errors during an action', (t) => {
   });
 });
 
-test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
+tap.test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
   let passedData = null;
   setup({
     mongo: {
@@ -330,7 +336,7 @@ test('handles actions passed in a { method s: <method>, data: <data> } form', (t
   });
 });
 
-test('supports the runAfter option', (t) => {
+tap.test('supports the runAfter option', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -366,7 +372,7 @@ test('supports the runAfter option', (t) => {
   });
 });
 
-test('supports the runEvery option', (t) => {
+tap.only('supports the runEvery option', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -382,13 +388,17 @@ test('supports the runEvery option', (t) => {
     const numberOfCalls = {
       kickball: 0
     };
+
     server.method('kickball', (data, callback) => {
       numberOfCalls.kickball ++;
       if (numberOfCalls.kickball > 1) {
-        return cleanup(t);
+        t.ok(numberOfCalls.kickball > 1);
+        cleanup(t);
+        return callback();
       }
       callback();
     });
+
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
@@ -399,7 +409,7 @@ test('supports the runEvery option', (t) => {
   });
 });
 
-test('supports hookId', (t) => {
+tap.test('supports hookId', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -445,7 +455,7 @@ test('supports hookId', (t) => {
   });
 });
 
-test('will not add an hook if it does not exist', (t) => {
+tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -461,7 +471,7 @@ test('will not add an hook if it does not exist', (t) => {
   });
 });
 
-test('will allow recurring hooks to be passed in the config', (t) => {
+tap.test('will allow recurring hooks to be passed in the config', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -484,9 +494,10 @@ test('will allow recurring hooks to be passed in the config', (t) => {
     let numberCalls = 0;
     server.method('baseball', (data, next) => {
       numberCalls++;
-      console.log('Play Ball!');
       if (numberCalls > 1) {
-        return cleanup(t);
+        t.ok(numberCalls > 1);
+        cleanup(t);
+        return;
       }
 
       next();
@@ -495,7 +506,7 @@ test('will allow recurring hooks to be passed in the config', (t) => {
   });
 });
 
-test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
+tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -534,7 +545,7 @@ test('will wait to process next batch of hooks until all previous hooks are done
   });
 });
 
-test('hook status only shows hooks that have completed since last run', (t) => {
+tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -578,7 +589,7 @@ test('hook status only shows hooks that have completed since last run', (t) => {
   });
 });
 
-test('will not retry if status was not "failed" ', (t) => {
+tap.test('will not retry if status was not "failed" ', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -617,7 +628,7 @@ test('will not retry if status was not "failed" ', (t) => {
   });
 });
 
-test('will return error if hook id does not exist', (t) => {
+tap.test('will return error if hook id does not exist', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -637,7 +648,7 @@ test('will return error if hook id does not exist', (t) => {
   });
 });
 
-test('will return error if hook id does not exist when used as decoration', (t) => {
+tap.test('will return error if hook id does not exist when used as decoration', (t) => {
   setup({
     mongo: {
       host: 'mongodb://localhost:27017',
@@ -658,7 +669,7 @@ test('will return error if hook id does not exist when used as decoration', (t) 
   });
 });
 
-test('retry a hook from id', (t) => {
+tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
   async.autoInject({
@@ -704,6 +715,6 @@ test('retry a hook from id', (t) => {
     t.equal(numberOfCalls > 0, true);
     t.equal(result.retry.results.length, 1);
     t.equal(result.retry.results[0].output, true);
-    result.startup.cleanup(t, process.exit);
+    result.startup.cleanup(t);
   });
 });
