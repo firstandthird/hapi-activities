@@ -200,12 +200,14 @@ tap.test('can handle and report callback errors during an action', (t) => {
       age: 5
     });
     server.on('hook:complete', () => {
-      // check the db object:
-      collection.findOne({}, (err2, hook) => {
-        t.equal(hook.results.length, 1);
-        t.equal(hook.results[0].error, 'I am an error');
-        return done(t);
-      });
+      if (numberOfCalls.breakfast === 2) {
+        // check the db object:
+        collection.findOne({}, (err2, hook) => {
+          t.equal(hook.results.length, 1);
+          t.equal(hook.results[0].error, 'I am an error');
+          return done(t);
+        });
+      }
     });
   });
 });
