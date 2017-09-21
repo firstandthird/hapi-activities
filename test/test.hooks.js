@@ -72,7 +72,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
     });
   });
 });
-/*
+
 tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
@@ -94,70 +94,10 @@ tap.test('adds a server method that will process another server method and data'
       return callback(null, numberOfCalls);
     });
     server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
-    setTimeout(() => {
+    server.on('hook:complete', () => {
       t.equal(numberOfCalls, 1, 'calls correct number of times');
       done(t);
-    }, 250);
-  });
-});
-
-tap.test('adds a server method that will process an hook composed of actions', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball',
-        'trumpet',
-        'pottery',
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0,
-      trumpet: 0,
-      pottery: 0
-    };
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback(null, numberOfCalls.kickball);
     });
-    server.method('trumpet', (data, callback) => {
-      t.equal(typeof data.age, 'number');
-      callback(null, numberOfCalls.trumpet);
-    });
-    server.method('pottery', (data, callback) => {
-      numberOfCalls.pottery ++;
-      callback(null, numberOfCalls.pottery);
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball > 0, true);
-      t.equal(numberOfCalls.pottery > 0, true);
-      collection.findOne({}, (err, hook) => {
-        t.equal(err, null);
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
-        server.methods.hook('after school', {
-          name: 'sven',
-          age: 5
-        });
-        setTimeout(() => {
-          collection.findOne({}, (err2, hook2) => {
-            t.equal(err2, null);
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
-            done(t);
-          });
-        }, 250);
-      });
-    }, 250);
   });
 });
 
@@ -181,10 +121,10 @@ tap.test('supports foo.bar for methods', (t) => {
       name: 'bob',
       age: 7
     });
-    setTimeout(() => {
+    server.on('hook:complete', () => {
       t.equal(numberOfCalls > 0, true);
       done(t);
-    }, 250);
+    });
   });
 });
 
@@ -225,12 +165,12 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
       name: 'bob',
       age: 7
     });
-    setTimeout(() => {
+    server.on('hook:complete', () => {
       t.equal(numberOfCalls.kickball, 1);
       t.equal(numberOfCalls.trumpet, 7);
       t.equal(numberOfCalls.pottery, 1);
       done(t);
-    }, 250);
+    });
   });
 });
 
@@ -326,17 +266,18 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
       callback(null, passedData);
     });
     server.methods.hook('models', { data2: 'is data 2' });
-    setTimeout(() => {
-      t.equal(passedData.data1, 'is data 1');
-      t.equal(passedData.data2, 'is data 2');
-      // you can still over-ride the defaults:
-      passedData = null;
-      server.methods.hook('models', { data1: 'is data 2' });
-      setTimeout(() => {
-        t.equal(passedData.data1, 'is data 2');
-        done(t);
-      }, 250);
-    }, 250);
+    server.methods.hook('models', { data1: 'is data 2' });
+    let called = 0;
+    server.on('hook:complete', (outcome) => {
+      if (outcome.hook.hookData.data2 === 'is data 2') {
+        called++;
+      } else {
+        called++;
+      }
+      if (called === 2) {
+        return done(t);
+      }
+    });
   });
 });
 
@@ -366,15 +307,21 @@ tap.test('supports the runAfter option', (t) => {
     }, {
       runAfter: new Date(new Date().getTime() + 250)
     });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 0);
-      setTimeout(() => {
-        t.equal(numberOfCalls.kickball, 1);
-        done(t);
-      }, 250);
-    }, 250);
+    let count = 0;
+    server.on('hook:complete', () => {
+      if (numberOfCalls.kickball === 0) {
+        count ++;
+      }
+      if (numberOfCalls.kickball === 1) {
+        count ++;
+      }
+      if (count === 2) {
+        return done(t);
+      }
+    });
   });
 });
+/*
 
 tap.test('supports the runEvery option', (t) => {
   setup({
