@@ -173,7 +173,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
     });
   });
 });
-/*
+
 tap.test('can handle and report callback errors during an action', (t) => {
   setup({
     mongo: {
@@ -209,7 +209,7 @@ tap.test('can handle and report callback errors during an action', (t) => {
     });
   });
 });
-*/
+
 tap.test('can handle and report hook errors during an action', (t) => {
   setup({
     log: false,
@@ -366,7 +366,7 @@ tap.test('supports hookId', (t) => {
     let cycles = 0;
     let semaphore = 0;
     server.method('kickball', (data, callback) => {
-      callback();
+      setTimeout(callback, 400);
     });
     server.methods.hook('after school', {
       name: 'bob',
@@ -400,7 +400,7 @@ tap.test('supports hookId', (t) => {
     });
   });
 });
-/*
+
 tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
@@ -449,7 +449,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
     });
   });
 });
-
+/*
 tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
@@ -487,9 +487,13 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
       runEvery: 'every 2 second',
       recurringId: 'afterSchool'
     });
+    // server.on('hook:start', () => {
+    // });
+    // server.on('hook:complete', () => {
+    // });
   });
 });
-
+*/
 tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
@@ -663,4 +667,3 @@ tap.test('retry a hook from id', (t) => {
     result.startup.cleanup(t);
   });
 });
-*/
