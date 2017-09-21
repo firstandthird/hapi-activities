@@ -210,7 +210,6 @@ tap.test('can handle and report callback errors during an action', (t) => {
   });
 });
 */
-
 tap.test('can handle and report hook errors during an action', (t) => {
   setup({
     log: false,
@@ -349,7 +348,7 @@ tap.test('supports the runEvery option', (t) => {
     });
   });
 });
-/*
+
 tap.test('supports hookId', (t) => {
   setup({
     mongo: {
@@ -364,14 +363,10 @@ tap.test('supports hookId', (t) => {
       ]
     }
   }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0
-    };
+    let cycles = 0;
+    let semaphore = 0;
     server.method('kickball', (data, callback) => {
-      setTimeout(() => {
-        numberOfCalls.kickball ++;
-        callback();
-      }, 200);
+      callback();
     });
     server.methods.hook('after school', {
       name: 'bob',
@@ -379,22 +374,33 @@ tap.test('supports hookId', (t) => {
     }, {
       hookId: 'afterSchool'
     });
-    setTimeout(() => {
+    server.on('hook:start', () => {
+      // exit if its run enough times:
+      if (cycles > 9) {
+        return done(t);
+      }
+      cycles++;
+      // launch another afterSchool hook as soon as this starts:
       server.methods.hook('after school', {
         name: 'bob',
         age: 7
       }, {
         hookId: 'afterSchool'
       });
-      server.on('hook:complete', () => {
-        t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
-        done(t);
-      });
-    }, 100);
+      t.equal(semaphore, 0, 'start is never called until previous hook completed');
+      semaphore++;
+    });
+    server.on('hook:complete', () => {
+      if (cycles > 9) {
+        return;
+      }
+      t.equal(semaphore, 1, 'start is never called without after');
+      semaphore--;
+      cycles++;
+    });
   });
 });
-*/
-
+/*
 tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
@@ -443,7 +449,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
     });
   });
 });
-/*
+
 tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
@@ -483,7 +489,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     });
   });
 });
-*/
+
 tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
@@ -657,3 +663,4 @@ tap.test('retry a hook from id', (t) => {
     result.startup.cleanup(t);
   });
 });
+*/
