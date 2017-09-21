@@ -485,14 +485,15 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
     }
   }, (server, collection, db, done) => {
     let numberCalls = 0;
+    server.on('hook:complete', () => {
+      if (numberCalls > 5) {
+        t.ok(true);
+        return done(t);
+      }
+    });
     server.method('baseball', (data, next) => {
       numberCalls++;
-      if (numberCalls > 1) {
-        t.ok(numberCalls > 1);
-        done(t);
-        return next();
-      }
-      next();
+      return next();
     });
   });
 });
