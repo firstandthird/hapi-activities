@@ -338,7 +338,7 @@ tap.test('will not add an hook if it does not exist', (t) => {
     }, 250);
   });
 });
-
+*/
 tap.test('will allow recurring hooks to be passed in the config', (t) => {
   setup({
     mongo: {
@@ -475,7 +475,7 @@ tap.test('will return error if hook id does not exist', (t) => {
     });
   });
 });
-*/
+
 tap.test('will return error if hook id does not exist when used as decoration', (t) => {
   setup({
     mongo: {
