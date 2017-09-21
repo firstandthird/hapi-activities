@@ -349,7 +349,7 @@ tap.test('supports the runEvery option', (t) => {
     });
   });
 });
-
+/*
 tap.test('supports hookId', (t) => {
   setup({
     mongo: {
@@ -393,7 +393,8 @@ tap.test('supports hookId', (t) => {
     }, 100);
   });
 });
-/*
+*/
+
 tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
@@ -438,7 +439,6 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
         done(t);
         return next();
       }
-
       next();
     });
   });
@@ -607,7 +607,7 @@ tap.test('will return error if hook id does not exist when used as decoration', 
     });
   });
 });
-*/
+
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
