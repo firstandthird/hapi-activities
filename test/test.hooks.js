@@ -173,7 +173,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
     });
   });
 });
-
+/*
 tap.test('can handle and report callback errors during an action', (t) => {
   setup({
     mongo: {
@@ -199,18 +199,17 @@ tap.test('can handle and report callback errors during an action', (t) => {
       name: 'sven',
       age: 5
     });
-    setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 2);
+    server.on('hook:complete', () => {
       // check the db object:
       collection.findOne({}, (err2, hook) => {
-        t.equal(hook.status, 'complete');
         t.equal(hook.results.length, 1);
-        t.equal(hook.results[0].error, undefined);
-        done(t);
+        t.equal(hook.results[0].error, 'I am an error');
+        return done(t);
       });
-    }, 250);
+    });
   });
 });
+*/
 
 tap.test('can handle and report hook errors during an action', (t) => {
   setup({
@@ -231,7 +230,6 @@ tap.test('can handle and report hook errors during an action', (t) => {
       if (numberOfCalls.breakfast === 1) {
         return callback();
       }
-
       numberOfCalls.breakfast ++;
       return callback(new Error('this is a thrown error'));
     });
@@ -239,10 +237,10 @@ tap.test('can handle and report hook errors during an action', (t) => {
       name: 'sven',
       age: 5
     });
-    setTimeout(() => {
+    server.on('hook:complete', () => {
       t.equal(numberOfCalls.breakfast, 1);
       done(t);
-    }, 250);
+    });
   });
 });
 
@@ -301,27 +299,20 @@ tap.test('supports the runAfter option', (t) => {
       numberOfCalls.kickball ++;
       callback(null, numberOfCalls.kickball);
     });
+    const startTime = new Date().getTime();
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
     }, {
       runAfter: new Date(new Date().getTime() + 250)
     });
-    let count = 0;
     server.on('hook:complete', () => {
-      if (numberOfCalls.kickball === 0) {
-        count ++;
-      }
-      if (numberOfCalls.kickball === 1) {
-        count ++;
-      }
-      if (count === 2) {
-        return done(t);
-      }
+      const endTime = new Date().getTime();
+      t.equal(endTime - startTime > 250, true, 'starts after specified runAfter time');
+      return done(t);
     });
   });
 });
-/*
 
 tap.test('supports the runEvery option', (t) => {
   setup({
@@ -340,23 +331,21 @@ tap.test('supports the runEvery option', (t) => {
     const numberOfCalls = {
       kickball: 0
     };
-
-
     server.method('kickball', (data, callback) => {
       numberOfCalls.kickball ++;
-      if (numberOfCalls.kickball > 1) {
-        t.ok(numberOfCalls.kickball > 1);
-        done(t);
-      }
       callback();
     });
-
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
     }, {
       runEvery: 'every 1 seconds',
       hookId: 'afterSchool'
+    });
+    server.on('hook:complete', () => {
+      if (numberOfCalls.kickball > 2) {
+        return done(t);
+      }
     });
   });
 });
@@ -404,7 +393,7 @@ tap.test('supports hookId', (t) => {
     }, 500);
   });
 });
-
+/*
 tap.test('will not add an hook if it does not exist', (t) => {
   setup({
     mongo: {
