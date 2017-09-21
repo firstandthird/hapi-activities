@@ -16,6 +16,9 @@ const defaults = {
 };
 
 exports.register = (server, options, next) => {
+  server.event('hook:query'); // passes the outstanding hooks that were found
+  server.event('hook:start'); // passes the hook data to the event handler
+  server.event('hook:complete'); // passes the hook data and result data to the event handler
   const settings = Object.assign({}, defaults, options);
   // connect to db:
   mongo.connect(settings.mongo.host, (connErr, db) => {
