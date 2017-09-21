@@ -37,17 +37,9 @@ tap.test('adds a server method that will process an hook composed of actions', (
       numberOfCalls.pottery ++;
       callback(null, numberOfCalls.pottery);
     });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    });
-    server.methods.hook('after school', {
-      name: 'sven',
-      age: 5
-    });
     let called = 0;
     server.on('hook:complete', (outcome) => {
-      const results = outcome.results.results;
+      const results = outcome.results;
       if (outcome.hook.hookData.name === 'bob') {
         t.equal(results.length, 3, 'reports outcomes for each hook action');
         t.equal(results[1].action, 'trumpet', 'reports action name for each hook action');
@@ -60,19 +52,25 @@ tap.test('adds a server method that will process an hook composed of actions', (
         called++;
       }
       if (called === 2) {
-        setTimeout(() => {
-          collection.findOne({}, (err, result) => {
-            t.equal(err, null);
-            t.equal(result.status, 'complete');
-            t.equal(result.results.length, 3);
-            return allDone(t);
-          });
-        }, 1000);
+        collection.findOne({}, (err, result) => {
+          t.equal(err, null);
+          t.equal(result.status, 'complete');
+          t.equal(result.results.length, 3);
+          return allDone(t);
+        });
       }
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    });
+    server.methods.hook('after school', {
+      name: 'sven',
+      age: 5
     });
   });
 });
-*/
+
 tap.test('calls hook server events', (t) => {
   setup({
     mongo: {
@@ -477,7 +475,7 @@ tap.test('will return error if hook id does not exist', (t) => {
     });
   });
 });
-
+*/
 tap.test('will return error if hook id does not exist when used as decoration', (t) => {
   setup({
     mongo: {
@@ -498,46 +496,46 @@ tap.test('will return error if hook id does not exist when used as decoration', 
     });
   });
 });
-//
-// tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
-//   setup({
-//     mongo: {
-//       host: 'mongodb://localhost:27017/hooks',
-//       collectionName: 'hapi-hooks-test'
-//     },
-//     log: false,
-//     interval: 1000,
-//     hooks: {
-//       'before school': [
-//         'dodgeball'
-//       ],
-//       'after school': [
-//         'kickball'
-//       ]
-//     }
-//   }, (server, collection, db, done) => {
-//     let kickball = 0;
-//     server.method('kickball', (data, callback) => {
-//       kickball ++;
-//       callback();
-//     });
-//     server.method('dodgeball', (data, callback) => {
-//       setTimeout(() => {
-//         t.equal(kickball <= 1, true, 'kickball only runs at most once despite a 200ms intervall');
-//         callback();
-//         done(t);
-//       }, 500);
-//     });
-//     server.methods.hook('before school', {}, {
-//       runEvery: 'every 2 second',
-//       hookId: 'beforeSchool'
-//     });
-//     server.methods.hook('after school', {}, {
-//       runEvery: 'every 2 second',
-//       recurringId: 'afterSchool'
-//     });
-//   });
-// });
+
+tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: false,
+    interval: 1000,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ],
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, done) => {
+    let kickball = 0;
+    server.method('kickball', (data, callback) => {
+      kickball ++;
+      callback();
+    });
+    server.method('dodgeball', (data, callback) => {
+      setTimeout(() => {
+        t.equal(kickball <= 1, true, 'kickball only runs at most once despite a 200ms intervall');
+        callback();
+        done(t);
+      }, 500);
+    });
+    server.methods.hook('before school', {}, {
+      runEvery: 'every 2 second',
+      hookId: 'beforeSchool'
+    });
+    server.methods.hook('after school', {}, {
+      runEvery: 'every 2 second',
+      recurringId: 'afterSchool'
+    });
+  });
+});
 
 tap.test('supports the runAfter option', (t) => {
   setup({
