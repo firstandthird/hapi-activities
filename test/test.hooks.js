@@ -386,11 +386,11 @@ tap.test('supports hookId', (t) => {
       }, {
         hookId: 'afterSchool'
       });
+      server.on('hook:complete', () => {
+        t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
+        done(t);
+      });
     }, 100);
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
-      done(t);
-    }, 500);
   });
 });
 /*
