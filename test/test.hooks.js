@@ -443,7 +443,7 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
     });
   });
 });
-
+/*
 tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
@@ -483,7 +483,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     });
   });
 });
-
+*/
 tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
