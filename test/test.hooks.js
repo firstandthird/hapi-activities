@@ -564,7 +564,12 @@ tap.test('supports the runAfter option', (t) => {
     }, {
       runAfter: new Date(new Date().getTime() + 250)
     });
+    let called = false;
     server.on('hook:complete', () => {
+      if (called) {
+        return;
+      }
+      called = true;
       const endTime = new Date().getTime();
       t.equal(endTime - startTime > 250, true, 'starts after specified runAfter time');
       return done(t);
