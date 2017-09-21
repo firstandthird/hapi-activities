@@ -161,7 +161,12 @@ tap.test('supports foo.bar for methods', (t) => {
       name: 'bob',
       age: 7
     });
+    let called = false;
     server.on('hook:complete', () => {
+      if (called) {
+        return;
+      }
+      called = true;
       t.equal(numberOfCalls > 0, true);
       done(t);
     });
