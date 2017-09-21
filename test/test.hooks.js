@@ -73,6 +73,46 @@ tap.test('adds a server method that will process an hook composed of actions', (
   });
 });
 
+tap.test('calls hook server events', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 100,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, allDone) => {
+    async.autoInject({
+      one(done) {
+        server.on('hook:query', () => {
+          done();
+        });
+      },
+      two(done) {
+        server.on('hook:start', () => {
+          done();
+        });
+      },
+      three(done) {
+        server.on('hook:complete', () => {
+          done();
+        });
+      }
+    }, () => allDone(t));
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    });
+  });
+});
+
 tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
