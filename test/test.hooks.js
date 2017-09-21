@@ -415,12 +415,6 @@ tap.test('supports hookId', (t) => {
     server.method('kickball', (data, callback) => {
       callback();
     });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
     server.on('hook:start', () => {
       // exit if its run enough times:
       if (cycles > 9) {
@@ -444,6 +438,12 @@ tap.test('supports hookId', (t) => {
       t.equal(semaphore, 1, 'start is never called without after');
       semaphore--;
       cycles++;
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      hookId: 'afterSchool'
     });
   });
 });
