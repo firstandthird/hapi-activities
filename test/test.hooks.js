@@ -4,7 +4,7 @@ const tap = require('tap');
 const async = require('async');
 const hookStatus = require('../lib/hookStatus');
 const retry = require('../lib/retry');
-
+/*
 tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
     mongo: {
@@ -72,7 +72,7 @@ tap.test('adds a server method that will process an hook composed of actions', (
     });
   });
 });
-
+*/
 tap.test('calls hook server events', (t) => {
   setup({
     mongo: {
