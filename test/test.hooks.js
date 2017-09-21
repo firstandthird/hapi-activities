@@ -41,55 +41,38 @@ tap.test('adds a server method that will process an hook composed of actions', (
       name: 'bob',
       age: 7
     });
-    async.autoInject({
-      wait1(done) {
-        setTimeout(done, 200);
-      },
-      verify1(wait1, done) {
-        t.equal(numberOfCalls.kickball, 1);
-        t.equal(numberOfCalls.trumpet, 7);
-        t.equal(numberOfCalls.pottery, 1);
-        done();
-      },
-      query1(verify1, done) {
-        collection.findOne({}, done);
-      },
-      verify2(query1, done) {
-        t.equal(query1.status, 'complete');
-        t.equal(query1.results.length, 3);
-        done();
-      },
-      hook(verify2, done) {
-        server.methods.hook('after school', {
-          name: 'sven',
-          age: 5
-        });
-        done();
-      },
-      wait2(hook, done) {
-        setTimeout(done, 200);
-      },
-      verify3(wait2, done) {
-        t.equal(numberOfCalls.kickball, 2);
-        t.equal(numberOfCalls.trumpet, 5);
-        t.equal(numberOfCalls.pottery, 2);
-        done();
-      },
-      query2(wait2, done) {
-        collection.findOne({}, done);
-      },
-      verify4(query2, done) {
-        t.equal(query2.status, 'complete');
-        t.equal(query2.results.length, 3);
-        done();
+    server.methods.hook('after school', {
+      name: 'sven',
+      age: 5
+    });
+    let called = 0;
+    server.on('hook:complete', (outcome) => {
+      const results = outcome.results.results;
+      if (outcome.hook.hookData.name === 'bob') {
+        t.equal(results.length, 3, 'reports outcomes for each hook action');
+        t.equal(results[1].action, 'trumpet', 'reports action name for each hook action');
+        t.equal(results[1].output, 7, 'reports output of each hook action');
+        called++;
+      } else {
+        t.equal(results.length, 3, 'reports outcomes for each hook action');
+        t.equal(results[1].action, 'trumpet', 'reports action name for each hook action');
+        t.equal(results[1].output, 5, 'reports output of each hook action');
+        called++;
       }
-    }, (err, results) => {
-      t.equal(err, null);
-      allDone(t);
+      if (called === 2) {
+        setTimeout(() => {
+          collection.findOne({}, (err, result) => {
+            t.equal(err, null);
+            t.equal(result.status, 'complete');
+            t.equal(result.results.length, 3);
+            return allDone(t);
+          });
+        }, 1000);
+      }
     });
   });
 });
-
+/*
 tap.test('adds a server method that will process another server method and data', (t) => {
   let numberOfCalls = 0;
   setup({
@@ -688,7 +671,7 @@ tap.test('will return error if hook id does not exist when used as decoration', 
     });
   });
 });
-
+*/
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
