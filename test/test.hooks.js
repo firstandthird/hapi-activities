@@ -287,7 +287,7 @@ tap.test('can handle and report hook errors during an action', (t) => {
     });
   });
 });
-
+*/
 tap.test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
   let passedData = null;
   setup({
@@ -338,7 +338,7 @@ tap.test('will not add an hook if it does not exist', (t) => {
     }, 250);
   });
 });
-*/
+
 tap.test('will allow recurring hooks to be passed in the config', (t) => {
   setup({
     mongo: {
