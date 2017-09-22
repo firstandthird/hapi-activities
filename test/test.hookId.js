@@ -1,7 +1,6 @@
 // const setup = require('./setup.js');
 // const tap = require('tap');
 // const async = require('async');
-//
 // 
 // tap.test('supports hookId', (t) => {
 //   setup({
