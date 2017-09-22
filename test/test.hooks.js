@@ -583,6 +583,50 @@ tap.test('retry a hook from id', (t) => {
   });
 });
 
+tap.test('calls hook server events', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 500,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, allDone) => {
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
+    const called = [];
+    server.on('hook:query', () => {
+      called.push('query');
+    });
+    server.on('hook:start', () => {
+      called.push('start');
+    });
+    server.on('hook:complete', () => {
+      called.push('complete');
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runEvery: 'every 2 seconds'
+    });
+    async.until(
+      () => called.length === 3,
+      (skip) => setTimeout(skip, 200),
+      () => {
+        t.equal(called[0], 'query', 'call query first');
+        t.equal(called[1], 'start', 'call start second');
+        t.equal(called[2], 'complete', 'call complete third');
+        allDone(t);
+      });
+  });
+});
+
 // tap.test('supports hookId', (t) => {
 //   setup({
 //     mongo: {
