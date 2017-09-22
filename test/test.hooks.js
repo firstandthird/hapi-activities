@@ -553,8 +553,9 @@ tap.test('supports hookId', (t) => {
       callback();
     });
     server.on('hook:start', () => {
+      semaphore++;
       // exit if its run enough times:
-      if (cycles > 9) {
+      if (cycles > 5) {
         return done(t);
       }
       cycles++;
@@ -566,14 +567,13 @@ tap.test('supports hookId', (t) => {
         hookId: 'afterSchool'
       });
       t.equal(semaphore, 0, 'start is never called until previous hook completed');
-      semaphore++;
     });
     server.on('hook:complete', () => {
-      if (cycles > 9) {
+      semaphore--;
+      if (cycles > 5) {
         return;
       }
       t.equal(semaphore, 1, 'start is never called without after');
-      semaphore--;
       cycles++;
     });
     server.methods.hook('after school', {
