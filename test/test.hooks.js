@@ -533,6 +533,101 @@ tap.test('supports the runEvery option', (t) => {
   });
 });
 
+tap.test('calls hook server events', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 500,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, allDone) => {
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
+    const called = [];
+    server.on('hook:query', () => {
+      called.push('query');
+    });
+    server.on('hook:start', () => {
+      called.push('start');
+    });
+    server.on('hook:complete', () => {
+      called.push('complete');
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runEvery: 'every 2 seconds'
+    });
+    async.until(
+      () => called.length === 3,
+      (skip) => setTimeout(skip, 200),
+      () => {
+        t.equal(called[0], 'query', 'call query first');
+        t.equal(called[1], 'start', 'call start second');
+        t.equal(called[2], 'complete', 'call complete third');
+        allDone(t);
+      });
+  });
+});
+
+tap.test('supports hookId', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: false,
+    interval: 100,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, done) => {
+    const executions = [];
+    server.method('kickball', (data, callback) => {
+      setTimeout(callback, 500);
+    });
+    server.on('hook:start', (data) => {
+      executions.push('start');
+      // exit if its run enough times:
+      if (executions.length > 5) {
+        for (let i = 0; i < executions.length; i++) {
+          if (i % 2 === 1) {
+            t.equal(executions[i], 'complete', 'complete only called after start');
+          } else {
+            t.equal(executions[i], 'start', 'start only called after complete');
+          }
+        }
+        return done(t);
+      }
+      // launch another afterSchool hook as soon as this starts:
+      server.methods.hook('after school', {
+        name: 'bob',
+        age: 7
+      }, {
+        hookId: 'afterSchool'
+      });
+    });
+    server.on('hook:complete', (data) => {
+      executions.push('complete');
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      hookId: 'afterSchool'
+    });
+  });
+});
+
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
@@ -583,102 +678,6 @@ tap.test('retry a hook from id', (t) => {
   });
 });
 
-tap.test('calls hook server events', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 500,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, allDone) => {
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
-    const called = [];
-    server.on('hook:query', () => {
-      called.push('query');
-    });
-    server.on('hook:start', () => {
-      called.push('start');
-    });
-    server.on('hook:complete', () => {
-      called.push('complete');
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      runEvery: 'every 2 seconds'
-    });
-    async.until(
-      () => called.length === 3,
-      (skip) => setTimeout(skip, 200),
-      () => {
-        t.equal(called[0], 'query', 'call query first');
-        t.equal(called[1], 'start', 'call start second');
-        t.equal(called[2], 'complete', 'call complete third');
-        allDone(t);
-      });
-  });
-});
-
-// tap.test('supports hookId', (t) => {
-//   setup({
-//     mongo: {
-//       host: 'mongodb://localhost:27017/hooks',
-//       collectionName: 'hapi-hooks-test'
-//     },
-//     log: false,
-//     interval: 300,
-//     hooks: {
-//       'after school': [
-//         'kickball'
-//       ]
-//     }
-//   }, (server, collection, db, done) => {
-//     let cycles = 0;
-//     let semaphore = 0;
-//     server.method('kickball', (data, callback) => {
-//       callback();
-//     });
-//     server.on('hook:start', () => {
-//       semaphore++;
-//       // exit if its run enough times:
-//       if (cycles > 5) {
-//         return done(t);
-//       }
-//       cycles++;
-//       // launch another afterSchool hook as soon as this starts:
-//       server.methods.hook('after school', {
-//         name: 'bob',
-//         age: 7
-//       }, {
-//         hookId: 'afterSchool'
-//       });
-//       t.equal(semaphore, 0, 'start is never called until previous hook completed');
-//     });
-//     server.on('hook:complete', () => {
-//       semaphore--;
-//       if (cycles > 5) {
-//         return;
-//       }
-//       t.equal(semaphore, 1, 'start is never called without after');
-//       cycles++;
-//     });
-//     server.methods.hook('after school', {
-//       name: 'bob',
-//       age: 7
-//     }, {
-//       hookId: 'afterSchool'
-//     });
-//   });
-// });
-
 // tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
 //   setup({
 //     mongo: {
@@ -686,7 +685,7 @@ tap.test('calls hook server events', (t) => {
 //       collectionName: 'hapi-hooks-test'
 //     },
 //     log: false,
-//     interval: 1000,
+//     interval: 100,
 //     hooks: {
 //       'before school': [
 //         'dodgeball'
@@ -696,46 +695,18 @@ tap.test('calls hook server events', (t) => {
 //       ]
 //     }
 //   }, (server, collection, db, done) => {
-//     let kickballCalled = 0;
-//     let dodgeballCalled = 0;
-//     let beforeSchoolStart = 0;
-//     let afterSchoolStart = 0;
-//     let finished = false;
-//     server.on('hook:start', (data) => {
-//       if (data.hookName === 'before school') {
-//         beforeSchoolStart++;
-//       }
-//       if (data.hookName === 'after school') {
-//         afterSchoolStart++;
-//       }
-//     });
+//     const executions = [];
 //     server.method('kickball', (data, callback) => {
-//       console.log('kickball')
-//       kickballCalled ++;
-//       async.until(() => finished, skip => skip(), callback);
+//       callback();
 //     });
 //     server.method('dodgeball', (data, callback) => {
-//       console.log('dodgeball')
-//       dodgeballCalled ++;
-//       async.until(() => finished, skip => skip(), callback);
+//       callback();
 //     });
-//     let cycles = 0;
-//     server.on('hook:query', (data) => {
-//       cycles++;
-//       console.log('cycle is %s', cycles)
-//       console.log('beforeSchoolStart is %s', beforeSchoolStart)
-//       console.log('afterSchoolStart is %s', afterSchoolStart)
-//     //   console.log('--------------')
-//       console.log(kickballCalled)
-//       console.log(dodgeballCalled)
-//       if (cycles > 3  ) {
-//         console.log('done!')
-//     //     // these will only be incremented once no matter how many cycles:
-//     //     // t.equal(kickballCalled, 1);
-//     //     // t.equal(dodgeballCalled, 0);
-//         finished = true;
-//         return done(t);
-//       }
+//     server.on('hook:start', (data) => {
+//       executions.push(`start:${data.hookName}`);
+//     });
+//     server.on('hook:complete', (data) => {
+//       executions.push(`complete:${data.hook.hookName}`);
 //     });
 //     server.methods.hook('before school', {}, {
 //       runEvery: 'every 2 seconds',
@@ -745,5 +716,12 @@ tap.test('calls hook server events', (t) => {
 //       runEvery: 'every 2 seconds',
 //       recurringId: 'afterSchool'
 //     });
+//     async.until(
+//       () => executions.length > 3,
+//       (skip) => setTimeout(skip, 300),
+//       () => {
+//         console.log(executions)
+//       }
+//     );
 //   });
 // });
