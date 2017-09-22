@@ -576,7 +576,7 @@ tap.test('calls hook server events', (t) => {
       });
   });
 });
-
+/*
 tap.test('supports hookId', (t) => {
   setup({
     mongo: {
@@ -628,6 +628,49 @@ tap.test('supports hookId', (t) => {
   });
 });
 
+tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: false,
+    interval: 100,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ],
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, done) => {
+    const executions = [];
+    server.method('kickball', (data, callback) => {
+      setTimeout(callback, 500);
+    });
+    server.method('dodgeball', (data, callback) => {
+      callback();
+    });
+    server.on('hook:start', (data) => {
+      executions.push(`start:${data.hookName}`);
+      if (executions.length > 8) {
+        console.log(executions)
+        return done(t);
+      }
+    });
+    server.on('hook:complete', (data) => {
+      executions.push(`complete:${data.hook.hookName}`);
+    });
+    server.methods.hook('before school', {}, {
+      runEvery: 'every 2 seconds'
+    });
+    server.methods.hook('after school', {}, {
+      runEvery: 'every 2 seconds'
+    });
+  });
+});
+*/
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
@@ -677,51 +720,3 @@ tap.test('retry a hook from id', (t) => {
     result.startup.cleanup(t);
   });
 });
-
-// tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
-//   setup({
-//     mongo: {
-//       host: 'mongodb://localhost:27017/hooks',
-//       collectionName: 'hapi-hooks-test'
-//     },
-//     log: false,
-//     interval: 100,
-//     hooks: {
-//       'before school': [
-//         'dodgeball'
-//       ],
-//       'after school': [
-//         'kickball'
-//       ]
-//     }
-//   }, (server, collection, db, done) => {
-//     const executions = [];
-//     server.method('kickball', (data, callback) => {
-//       callback();
-//     });
-//     server.method('dodgeball', (data, callback) => {
-//       callback();
-//     });
-//     server.on('hook:start', (data) => {
-//       executions.push(`start:${data.hookName}`);
-//     });
-//     server.on('hook:complete', (data) => {
-//       executions.push(`complete:${data.hook.hookName}`);
-//     });
-//     server.methods.hook('before school', {}, {
-//       runEvery: 'every 2 seconds',
-//       hookId: 'beforeSchool'
-//     });
-//     server.methods.hook('after school', {}, {
-//       runEvery: 'every 2 seconds',
-//       recurringId: 'afterSchool'
-//     });
-//     async.until(
-//       () => executions.length > 3,
-//       (skip) => setTimeout(skip, 300),
-//       () => {
-//         console.log(executions)
-//       }
-//     );
-//   });
-// });
