@@ -22,16 +22,19 @@ tap.test('calls hook server events', (t) => {
     async.autoInject({
       one(done) {
         server.on('hook:query', () => {
+          console.log('one')
           done();
         });
       },
       two(done) {
         server.on('hook:start', () => {
+          console.log('two')
           done();
         });
       },
       three(done) {
         server.on('hook:complete', () => {
+          console.log('three')
           done();
         });
       }
