@@ -533,58 +533,6 @@ tap.test('supports the runEvery option', (t) => {
   });
 });
 
-tap.test('supports hookId', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 300,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    let cycles = 0;
-    let semaphore = 0;
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
-    server.on('hook:start', () => {
-      semaphore++;
-      // exit if its run enough times:
-      if (cycles > 5) {
-        return done(t);
-      }
-      cycles++;
-      // launch another afterSchool hook as soon as this starts:
-      server.methods.hook('after school', {
-        name: 'bob',
-        age: 7
-      }, {
-        hookId: 'afterSchool'
-      });
-      t.equal(semaphore, 0, 'start is never called until previous hook completed');
-    });
-    server.on('hook:complete', () => {
-      semaphore--;
-      if (cycles > 5) {
-        return;
-      }
-      t.equal(semaphore, 1, 'start is never called without after');
-      cycles++;
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
-  });
-});
-
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
