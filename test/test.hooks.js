@@ -77,13 +77,16 @@ tap.test('calls hook server events', (t) => {
       host: 'mongodb://localhost:27017/hooks',
       collectionName: 'hapi-hooks-test'
     },
-    interval: 100,
+    interval: 500,
     hooks: {
       'after school': [
         'kickball'
       ]
     }
   }, (server, collection, db, allDone) => {
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
     async.autoInject({
       one(done) {
         server.on('hook:query', () => {
@@ -101,13 +104,12 @@ tap.test('calls hook server events', (t) => {
         });
       }
     }, () => allDone(t));
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    });
+    setTimeout(() => {
+      server.methods.hook('after school', {
+        name: 'bob',
+        age: 7
+      });
+    }, 1000);
   });
 });
 
