@@ -84,9 +84,6 @@ tap.test('calls hook server events', (t) => {
       ]
     }
   }, (server, collection, db, allDone) => {
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
     async.autoInject({
       one(done) {
         server.on('hook:query', () => {
@@ -104,12 +101,17 @@ tap.test('calls hook server events', (t) => {
         });
       }
     }, () => allDone(t));
-    setTimeout(() => {
-      server.methods.hook('after school', {
-        name: 'bob',
-        age: 7
-      });
-    }, 1000);
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    });
   });
 });
 
