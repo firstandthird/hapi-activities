@@ -576,7 +576,7 @@ tap.test('calls hook server events', (t) => {
       });
   });
 });
-/*
+
 tap.test('supports hookId', (t) => {
   setup({
     mongo: {
@@ -635,7 +635,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
       collectionName: 'hapi-hooks-test'
     },
     log: false,
-    interval: 100,
+    interval: 1000,
     hooks: {
       'before school': [
         'dodgeball'
@@ -646,31 +646,46 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     }
   }, (server, collection, db, done) => {
     const executions = [];
+    let intervals = 0;
     server.method('kickball', (data, callback) => {
-      setTimeout(callback, 500);
+      // will wait to return until after interval has fired a few times:
+      async.until(
+        () => intervals > 3,
+        (skip) => setTimeout(skip, 200),
+        callback);
     });
     server.method('dodgeball', (data, callback) => {
       callback();
     });
-    server.on('hook:start', (data) => {
-      executions.push(`start:${data.hookName}`);
-      if (executions.length > 8) {
-        console.log(executions)
+    server.on('hook:query', (data) => {
+      intervals++;
+      if (intervals > 6) {
+        for (let i = 0; i < executions.length; i += 4) {
+          t.notEqual(executions[i].indexOf('start'), -1, 'first process launched');
+          t.notEqual(executions[i + 1].indexOf('start'), -1, 'second process launched');
+          t.notEqual(executions[i + 2].indexOf('complete'), -1, 'first process exits');
+          t.notEqual(executions[i + 3].indexOf('complete'), -1, 'second process exits');
+        }
         return done(t);
       }
+    });
+    server.on('hook:start', (data) => {
+      executions.push(`start:${data.hookName}`);
     });
     server.on('hook:complete', (data) => {
       executions.push(`complete:${data.hook.hookName}`);
     });
     server.methods.hook('before school', {}, {
-      runEvery: 'every 2 seconds'
+      runEvery: 'every 1 seconds',
+      hookId: 'beforeSchool'
     });
     server.methods.hook('after school', {}, {
-      runEvery: 'every 2 seconds'
+      runEvery: 'every 1 seconds',
+      hookId: 'afterSchool'
     });
   });
 });
-*/
+
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
   let numberOfCalls = 0;
