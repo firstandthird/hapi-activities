@@ -631,23 +631,21 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
   }, (server, collection, db, done) => {
     let intervals = 0;
     server.method('kickball', (data, callback) => {
-      // will wait to return until after interval has fired a few times:
       const currentInterval = intervals;
-      // block until we confirm next interval did not execute
+      // block for two intervals:
       async.until(
-        () => intervals > currentInterval,
+        () => intervals > currentInterval + 1,
         (skip) => setTimeout(skip, 10),
         callback);
     });
     server.method('dodgeball', (data, callback) => {
-      // return immediately:
+      // return immediately, but will not run if 'kickball' is still running
       callback();
     });
     server.on('hook:query', (data) => {
-      console.log(intervals)
-      console.log(data)
       intervals++;
       if (intervals > 6) {
+        t.equal(data.complete, 3, 'finished only 3 processes in 7 intervals');
         return done(t);
       }
     });
