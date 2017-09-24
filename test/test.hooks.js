@@ -634,27 +634,28 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
       const currentInterval = intervals;
       // block for two intervals:
       async.until(
-        () => intervals > currentInterval + 1,
+        () => intervals > 6,
         (skip) => setTimeout(skip, 10),
         callback);
     });
+    // will wait until 'kickball' exits to run again
     server.method('dodgeball', (data, callback) => {
-      // return immediately, but will not run if 'kickball' is still running
+      // return immediately,
       callback();
     });
     server.on('hook:query', (data) => {
       intervals++;
       if (intervals > 6) {
-        t.equal(data.complete, 3, 'finished only 3 processes in 7 intervals');
+        t.equal(data.complete, 1, 'finished only 1 processes in multiple intervals');
         return done(t);
       }
     });
     server.methods.hook('before school', {}, {
-      runEvery: 'every 2 seconds',
+      runEvery: 'every 1 seconds',
       hookId: 'beforeSchool'
     });
     server.methods.hook('after school', {}, {
-      runEvery: 'every 2 seconds',
+      runEvery: 'every 1 seconds',
       hookId: 'afterSchool'
     });
   });
