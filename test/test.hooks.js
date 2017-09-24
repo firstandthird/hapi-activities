@@ -627,7 +627,7 @@ tap.test('supports hookId', (t) => {
     });
   });
 });
-
+/*
 tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
@@ -685,6 +685,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     });
   });
 });
+*/
 
 tap.test('retry a hook from id', (t) => {
   let key = 0; // our test hook won't pass while key is zero
