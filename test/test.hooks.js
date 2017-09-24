@@ -631,8 +631,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
   }, (server, collection, db, done) => {
     let intervals = 0;
     server.method('kickball', (data, callback) => {
-      const currentInterval = intervals;
-      // block for two intervals:
+      // block until all intervals are done:
       async.until(
         () => intervals > 6,
         (skip) => setTimeout(skip, 10),
@@ -646,7 +645,7 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     server.on('hook:query', (data) => {
       intervals++;
       if (intervals > 6) {
-        t.equal(data.complete, 1, 'finished only 1 processes in multiple intervals');
+        t.equal(data.complete < 3, true, 'finished only 1 or 2 processes in 7 intervals');
         return done(t);
       }
     });
