@@ -577,41 +577,6 @@ tap.test('calls hook server events', (t) => {
   });
 });
 
-/*
-tap.test('supports hookId', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 300,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    server.method('kickball', (data, callback) => {
-      setTimeout(callback, 500);
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
-    // launch another afterSchool hook as soon as this starts:
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
-  });
-});
-*/
-
 tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
   setup({
     mongo: {
