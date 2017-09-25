@@ -13,7 +13,7 @@ module.exports = (options, callback) => {
       done(null, db.collection(options.mongo.collectionName));
     },
     drop(collection, db, done) {
-      collection.drop(() => done());
+      collection.remove(() => done());
     },
     server(drop, done) {
       const server = new Hapi.Server({

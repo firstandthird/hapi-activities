@@ -37,95 +37,36 @@ tap.test('adds a server method that will process an hook composed of actions', (
       numberOfCalls.pottery ++;
       callback(null, numberOfCalls.pottery);
     });
+    let called = 0;
+    server.on('hook:complete', (outcome) => {
+      const results = outcome.results;
+      if (outcome.hook.hookData.name === 'bob') {
+        t.equal(results.length, 3, 'reports outcomes for each hook action');
+        t.equal(results[1].action, 'trumpet', 'reports action name for each hook action');
+        t.equal(results[1].output, 7, 'reports output of each hook action');
+        called++;
+      } else {
+        t.equal(results.length, 3, 'reports outcomes for each hook action');
+        t.equal(results[1].action, 'trumpet', 'reports action name for each hook action');
+        t.equal(results[1].output, 5, 'reports output of each hook action');
+        called++;
+      }
+      if (called === 2) {
+        collection.findOne({}, (err, result) => {
+          t.equal(err, null);
+          t.equal(result.status, 'complete');
+          t.equal(result.results.length, 3);
+          return allDone(t);
+        });
+      }
+    });
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
     });
-    async.autoInject({
-      wait1(done) {
-        setTimeout(done, 200);
-      },
-      verify1(wait1, done) {
-        t.equal(numberOfCalls.kickball, 1);
-        t.equal(numberOfCalls.trumpet, 7);
-        t.equal(numberOfCalls.pottery, 1);
-        done();
-      },
-      query1(verify1, done) {
-        collection.findOne({}, done);
-      },
-      verify2(query1, done) {
-        t.equal(query1.status, 'complete');
-        t.equal(query1.results.length, 3);
-        done();
-      },
-      hook(verify2, done) {
-        server.methods.hook('after school', {
-          name: 'sven',
-          age: 5
-        });
-        done();
-      },
-      wait2(hook, done) {
-        setTimeout(done, 200);
-      },
-      verify3(wait2, done) {
-        t.equal(numberOfCalls.kickball, 2);
-        t.equal(numberOfCalls.trumpet, 5);
-        t.equal(numberOfCalls.pottery, 2);
-        done();
-      },
-      query2(wait2, done) {
-        collection.findOne({}, done);
-      },
-      verify4(query2, done) {
-        t.equal(query2.status, 'complete');
-        t.equal(query2.results.length, 3);
-        done();
-      }
-    }, (err, results) => {
-      t.equal(err, null);
-      allDone(t);
-    });
-  });
-});
-
-tap.test('calls hook server events', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, allDone) => {
-    async.autoInject({
-      one(done) {
-        server.on('hook:query', () => {
-          done();
-        });
-      },
-      two(done) {
-        server.on('hook:start', () => {
-          done();
-        });
-      },
-      three(done) {
-        server.on('hook:complete', () => {
-          done();
-        });
-      }
-    }, () => allDone(t));
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
     server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
+      name: 'sven',
+      age: 5
     });
   });
 });
@@ -151,70 +92,10 @@ tap.test('adds a server method that will process another server method and data'
       return callback(null, numberOfCalls);
     });
     server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
-    setTimeout(() => {
-      t.equal(numberOfCalls, 1, 'calls correct number of times');
+    server.on('hook:complete', () => {
+      t.equal(numberOfCalls > 0, true, 'calls correct number of times');
       done(t);
-    }, 250);
-  });
-});
-
-tap.test('adds a server method that will process an hook composed of actions', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball',
-        'trumpet',
-        'pottery',
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0,
-      trumpet: 0,
-      pottery: 0
-    };
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback(null, numberOfCalls.kickball);
     });
-    server.method('trumpet', (data, callback) => {
-      t.equal(typeof data.age, 'number');
-      callback(null, numberOfCalls.trumpet);
-    });
-    server.method('pottery', (data, callback) => {
-      numberOfCalls.pottery ++;
-      callback(null, numberOfCalls.pottery);
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball > 0, true);
-      t.equal(numberOfCalls.pottery > 0, true);
-      collection.findOne({}, (err, hook) => {
-        t.equal(err, null);
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 3);
-        server.methods.hook('after school', {
-          name: 'sven',
-          age: 5
-        });
-        setTimeout(() => {
-          collection.findOne({}, (err2, hook2) => {
-            t.equal(err2, null);
-            t.equal(hook2.status, 'complete');
-            t.equal(hook2.results.length, 3);
-            done(t);
-          });
-        }, 250);
-      });
-    }, 250);
   });
 });
 
@@ -238,10 +119,15 @@ tap.test('supports foo.bar for methods', (t) => {
       name: 'bob',
       age: 7
     });
-    setTimeout(() => {
+    let called = false;
+    server.on('hook:complete', () => {
+      if (called) {
+        return;
+      }
+      called = true;
       t.equal(numberOfCalls > 0, true);
       done(t);
-    }, 250);
+    });
   });
 });
 
@@ -282,12 +168,12 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
       name: 'bob',
       age: 7
     });
-    setTimeout(() => {
+    server.on('hook:complete', () => {
       t.equal(numberOfCalls.kickball, 1);
       t.equal(numberOfCalls.trumpet, 7);
       t.equal(numberOfCalls.pottery, 1);
       done(t);
-    }, 250);
+    });
   });
 });
 
@@ -316,16 +202,16 @@ tap.test('can handle and report callback errors during an action', (t) => {
       name: 'sven',
       age: 5
     });
-    setTimeout(() => {
-      t.equal(numberOfCalls.breakfast, 2);
-      // check the db object:
-      collection.findOne({}, (err2, hook) => {
-        t.equal(hook.status, 'complete');
-        t.equal(hook.results.length, 1);
-        t.equal(hook.results[0].error, undefined);
-        done(t);
-      });
-    }, 250);
+    server.on('hook:complete', () => {
+      if (numberOfCalls.breakfast === 2) {
+        // check the db object:
+        collection.findOne({}, (err2, hook) => {
+          t.equal(hook.results.length, 1);
+          t.equal(hook.results[0].error, 'I am an error');
+          return done(t);
+        });
+      }
+    });
   });
 });
 
@@ -348,7 +234,6 @@ tap.test('can handle and report hook errors during an action', (t) => {
       if (numberOfCalls.breakfast === 1) {
         return callback();
       }
-
       numberOfCalls.breakfast ++;
       return callback(new Error('this is a thrown error'));
     });
@@ -356,10 +241,10 @@ tap.test('can handle and report hook errors during an action', (t) => {
       name: 'sven',
       age: 5
     });
-    setTimeout(() => {
+    server.on('hook:complete', () => {
       t.equal(numberOfCalls.breakfast, 1);
       done(t);
-    }, 250);
+    });
   });
 });
 
@@ -383,135 +268,18 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
       callback(null, passedData);
     });
     server.methods.hook('models', { data2: 'is data 2' });
-    setTimeout(() => {
-      t.equal(passedData.data1, 'is data 1');
-      t.equal(passedData.data2, 'is data 2');
-      // you can still over-ride the defaults:
-      passedData = null;
-      server.methods.hook('models', { data1: 'is data 2' });
-      setTimeout(() => {
-        t.equal(passedData.data1, 'is data 2');
-        done(t);
-      }, 250);
-    }, 250);
-  });
-});
-
-tap.test('supports the runAfter option', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0
-    };
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback(null, numberOfCalls.kickball);
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      runAfter: new Date(new Date().getTime() + 250)
-    });
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 0);
-      setTimeout(() => {
-        t.equal(numberOfCalls.kickball, 1);
-        done(t);
-      }, 250);
-    }, 250);
-  });
-});
-
-tap.test('supports the runEvery option', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0
-    };
-
-
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      if (numberOfCalls.kickball > 1) {
-        t.ok(numberOfCalls.kickball > 1);
-        done(t);
+    server.methods.hook('models', { data1: 'is data 2' });
+    let called = 0;
+    server.on('hook:complete', (outcome) => {
+      if (outcome.hook.hookData.data2 === 'is data 2') {
+        called++;
+      } else {
+        called++;
       }
-      callback();
+      if (called === 2) {
+        return done(t);
+      }
     });
-
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      runEvery: 'every 1 seconds',
-      hookId: 'afterSchool'
-    });
-  });
-});
-
-tap.test('supports hookId', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 300,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0
-    };
-    server.method('kickball', (data, callback) => {
-      setTimeout(() => {
-        numberOfCalls.kickball ++;
-        callback();
-      }, 200);
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      hookId: 'afterSchool'
-    });
-    setTimeout(() => {
-      server.methods.hook('after school', {
-        name: 'bob',
-        age: 7
-      }, {
-        hookId: 'afterSchool'
-      });
-    }, 100);
-    setTimeout(() => {
-      t.equal(numberOfCalls.kickball, 1, 'kickball only runs once');
-      done(t);
-    }, 500);
   });
 });
 
@@ -552,55 +320,15 @@ tap.test('will allow recurring hooks to be passed in the config', (t) => {
     }
   }, (server, collection, db, done) => {
     let numberCalls = 0;
+    server.on('hook:complete', () => {
+      if (numberCalls > 5) {
+        t.ok(true);
+        return done(t);
+      }
+    });
     server.method('baseball', (data, next) => {
       numberCalls++;
-      if (numberCalls > 1) {
-        t.ok(numberCalls > 1);
-        done(t);
-        return next();
-      }
-
-      next();
-    });
-  });
-});
-
-tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 1000,
-    hooks: {
-      'before school': [
-        'dodgeball'
-      ],
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    let kickball = 0;
-    server.method('kickball', (data, callback) => {
-      kickball ++;
-      callback();
-    });
-    server.method('dodgeball', (data, callback) => {
-      setTimeout(() => {
-        t.equal(kickball, 1, 'kickball only runs once despite a 200ms intervall');
-        callback();
-        done(t);
-      }, 500);
-    });
-    server.methods.hook('before school', {}, {
-      runEvery: 'every 2 second',
-      hookId: 'beforeSchool'
-    });
-    server.methods.hook('after school', {}, {
-      runEvery: 'every 2 second',
-      recurringId: 'afterSchool'
+      return next();
     });
   });
 });
@@ -725,6 +453,174 @@ tap.test('will return error if hook id does not exist when used as decoration', 
     server.retryHook('does_not_exist', (err, res) => {
       t.notEqual(err, null);
       done(t);
+    });
+  });
+});
+
+tap.test('supports the runAfter option', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 100,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, done) => {
+    const numberOfCalls = {
+      kickball: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback(null, numberOfCalls.kickball);
+    });
+    const startTime = new Date().getTime();
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runAfter: new Date(new Date().getTime() + 250)
+    });
+    let called = false;
+    server.on('hook:complete', () => {
+      if (called) {
+        return;
+      }
+      called = true;
+      const endTime = new Date().getTime();
+      t.equal(endTime - startTime > 250, true, 'starts after specified runAfter time');
+      return done(t);
+    });
+  });
+});
+
+tap.test('supports the runEvery option', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: false,
+    interval: 100,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, done) => {
+    const numberOfCalls = {
+      kickball: 0
+    };
+    server.method('kickball', (data, callback) => {
+      numberOfCalls.kickball ++;
+      callback();
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runEvery: 'every 1 seconds',
+      hookId: 'afterSchool'
+    });
+    server.on('hook:complete', () => {
+      if (numberOfCalls.kickball > 2) {
+        return done(t);
+      }
+    });
+  });
+});
+
+tap.test('calls hook server events', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 500,
+    hooks: {
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, allDone) => {
+    server.method('kickball', (data, callback) => {
+      callback();
+    });
+    const called = [];
+    server.on('hook:query', () => {
+      called.push('query');
+    });
+    server.on('hook:start', () => {
+      called.push('start');
+    });
+    server.on('hook:complete', () => {
+      called.push('complete');
+    });
+    server.methods.hook('after school', {
+      name: 'bob',
+      age: 7
+    }, {
+      runEvery: 'every 2 seconds'
+    });
+    async.until(
+      () => called.length === 3,
+      (skip) => setTimeout(skip, 200),
+      () => {
+        t.equal(called[0], 'query', 'call query first');
+        t.equal(called[1], 'start', 'call start second');
+        t.equal(called[2], 'complete', 'call complete third');
+        allDone(t);
+      });
+  });
+});
+
+tap.test('will wait to process next batch of hooks until all previous hooks are done', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: false,
+    interval: 1000,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ],
+      'after school': [
+        'kickball'
+      ]
+    }
+  }, (server, collection, db, done) => {
+    let intervals = 0;
+    server.method('kickball', (data, callback) => {
+      // block until all intervals are done:
+      async.until(
+        () => intervals > 6,
+        (skip) => setTimeout(skip, 10),
+        callback);
+    });
+    // will wait until 'kickball' exits to run again
+    server.method('dodgeball', (data, callback) => {
+      // return immediately,
+      callback();
+    });
+    server.on('hook:query', (data) => {
+      intervals++;
+      if (intervals > 6) {
+        t.equal(data.complete < 3, true, 'finished only 1 or 2 processes in 7 intervals');
+        return done(t);
+      }
+    });
+    server.methods.hook('before school', {}, {
+      runEvery: 'every 1 seconds',
+      hookId: 'beforeSchool'
+    });
+    server.methods.hook('after school', {}, {
+      runEvery: 'every 1 seconds',
+      hookId: 'afterSchool'
     });
   });
 });
