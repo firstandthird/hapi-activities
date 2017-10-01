@@ -44,7 +44,7 @@ exports.register = (server, options, next) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
       server.decorate('server', 'retryHook', (hookId, callback) => {
-        retry(server, settings, collection, hookId, (err, response) => {
+        retry(server, settings, collection, hookId, true, (err, response) => {
           if (err) {
             return callback(err);
           }
@@ -56,7 +56,7 @@ exports.register = (server, options, next) => {
         hook(server, settings, collection, hookName, hookData, hookOptions || {});
       });
       server.method('retryHook', (hookId, callback) => {
-        retry(server, settings, collection, hookId, (err, response) => {
+        retry(server, settings, collection, hookId, true, (err, response) => {
           /* istanbul ignore if */
           if (err) {
             return callback(err);

@@ -377,45 +377,6 @@ tap.test('hook status only shows hooks that have completed since last run', (t) 
   });
 });
 
-tap.test('will not retry if status was not "failed" ', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 200,
-    hooks: {
-      'before school': [
-        'dodgeball'
-      ]
-    }
-  }, (server, collection, db, allDone) => {
-    async.autoInject({
-      insert1(done) {
-        collection.insert({ _id: 'myHookId', status: 'complete' }, done);
-      },
-      retry1(insert1, done) {
-        let called;
-        server.on('log', (data) => {
-          // only check this first time log is called:
-          if (!called) {
-            called = true;
-            t.equal(data.tags[1], 'repeat', 'logs repeat message');
-            t.notEqual(data.data.message.indexOf('myHookId did not fail'), -1, 'notifies hook id did not fail');
-          }
-        });
-        retry(server, {}, collection, 'myHookId', (err) => {
-          t.notEqual(err, null, 'calls callback if hook id was not "failed"');
-          done();
-        });
-      },
-    }, () => {
-      allDone(t);
-    });
-  });
-});
-
 tap.test('will return error if hook id does not exist', (t) => {
   setup({
     mongo: {
@@ -621,6 +582,89 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
     server.methods.hook('after school', {}, {
       runEvery: 'every 1 seconds',
       hookId: 'afterSchool'
+    });
+  });
+});
+
+tap.test('retry hooks that hang longer than 5 mins', (t) => {
+  let numberOfCalls = 0;
+  let called = false;
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    interval: 1000,
+    hooks: {
+      retry: [
+        'kickball',
+      ]
+    }
+  }, (server, collection, db, allDone) => {
+    async.autoInject({
+      method(done) {
+        server.method('kickball', (data, callback) => {
+          numberOfCalls ++;
+          callback(null, numberOfCalls);
+        });
+        collection.insertOne({
+          _id: '59cc6efbe7da67684da4f3e4',
+          added: new Date(),
+          hookData: {},
+          hookName: 'retry',
+          startedOn: new Date(new Date() - 1000 * 60 * 60 * 5),
+          status: 'processing'
+        }, done);
+      },
+      event(method, done) {
+        server.on('hook:query', (result) => {
+          if (numberOfCalls > 0) {
+            return done();
+          }
+        });
+      },
+    }, (err, result) => {
+      t.equal(err, null);
+      allDone(t);
+    });
+  });
+});
+
+tap.test('will manually retry only if status was not "failed"', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
+    },
+    log: false,
+    interval: 200,
+    hooks: {
+      'before school': [
+        'dodgeball'
+      ]
+    }
+  }, (server, collection, db, allDone) => {
+    async.autoInject({
+      insert1(done) {
+        collection.insert({ _id: 'myHookId', status: 'complete' }, done);
+      },
+      retry1(insert1, done) {
+        let called;
+        server.on('log', (data) => {
+          // only check this first time log is called:
+          if (!called) {
+            called = true;
+            t.equal(data.tags[1], 'repeat', 'logs repeat message');
+            t.notEqual(data.data.message.indexOf('myHookId did not fail'), -1, 'notifies hook id did not fail');
+          }
+        });
+        retry(server, {}, collection, 'myHookId', true, (err) => {
+          t.notEqual(err, null, 'calls callback if hook id was not "failed"');
+          done();
+        });
+      },
+    }, () => {
+      allDone(t);
     });
   });
 });
