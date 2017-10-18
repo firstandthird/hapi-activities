@@ -61,11 +61,11 @@ tap.test('adds a server method that will process an hook composed of actions', (
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
-    });
+    }, { hookId: 'after-school-bob' });
     server.methods.hook('after school', {
       name: 'sven',
       age: 5
-    });
+    }, { hookId: 'after-school-sven' });
   });
 });
 
@@ -89,7 +89,7 @@ tap.test('adds a server method that will process another server method and data'
       numberOfCalls ++;
       return callback(null, numberOfCalls);
     });
-    server.methods.hook('user.add', { user: { email: 'bob@bob.com' } });
+    server.methods.hook('user.add', { user: { email: 'bob@bob.com' } }, { hookId: 'user-add-bob' });
     server.on('hook:complete', () => {
       t.equal(numberOfCalls > 0, true, 'calls correct number of times');
       done(t);
@@ -116,7 +116,7 @@ tap.test('supports foo.bar for methods', (t) => {
     server.methods.hook('after school', {
       name: 'bob',
       age: 7
-    });
+    }, { hookId: 'user-bob' });
     let called = false;
     server.on('hook:complete', () => {
       if (called) {
@@ -165,7 +165,7 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
     server.hook('after school', {
       name: 'bob',
       age: 7
-    });
+    }, { hookId: 'user-bob' });
     server.on('hook:complete', () => {
       t.equal(numberOfCalls.kickball, 1);
       t.equal(numberOfCalls.trumpet, 7);
@@ -194,8 +194,8 @@ tap.test('handles actions passed in a { method s: <method>, data: <data> } form'
       passedData = data;
       callback(null, passedData);
     });
-    server.methods.hook('models', { data2: 'is data 2' });
-    server.methods.hook('models', { data1: 'is data 2' });
+    server.methods.hook('models', { data2: 'is data 2' }, { hookId: 'models-1' });
+    server.methods.hook('models', { data1: 'is data 2' }, { hookId: 'models-2' });
     let called = 0;
     server.on('hook:complete', (outcome) => {
       if (outcome.hook.hookData.data2 === 'is data 2') {
@@ -219,7 +219,7 @@ tap.test('will not add an hook if it does not exist', (t) => {
     interval: 100,
     hooks: {} // no hooks
   }, (server, collection, db, done) => {
-    server.methods.hook('perpetual motion', {});
+    server.methods.hook('perpetual motion', {}, { hookId: 'doesnt-exist-sadface' });
     setTimeout(() => {
       done(t);
     }, 250);

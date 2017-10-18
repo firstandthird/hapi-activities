@@ -26,7 +26,8 @@ tap.test('supports the runAfter option', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runAfter: new Date(new Date().getTime() + 250)
+      runAfter: new Date(new Date().getTime() + 250),
+      hookId: 'run-after-bob'
     });
     let called = false;
     server.on('hook:complete', () => {

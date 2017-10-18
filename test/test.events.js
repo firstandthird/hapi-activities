@@ -27,7 +27,7 @@ tap.test('can handle and report hook errors during an action', (t) => {
     server.methods.hook('before school', {
       name: 'sven',
       age: 5
-    });
+    }, { hookId: 'user-bob' });
     server.on('hook:complete', () => {
       t.equal(numberOfCalls.breakfast, 1);
       done(t);
@@ -66,7 +66,8 @@ tap.test('calls hook server events', (t) => {
       name: 'bob',
       age: 7
     }, {
-      runEvery: 'every 2 seconds'
+      runEvery: 'every 2 seconds',
+      hookId: 'recurring-bob'
     });
     async.until(
       () => called.length > 3,

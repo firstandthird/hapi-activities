@@ -17,7 +17,7 @@ tap.test('can handle and report callback errors during an action', (t) => {
     server.methods.hook('before school', {
       name: 'sven',
       age: 5
-    });
+    }, { hookId: 'breakfast-1' });
 
     server.on('hook:complete', () => {
       collection.findOne({}, (err2, hook) => {
