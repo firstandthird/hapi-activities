@@ -1,9 +1,7 @@
-'use strict';
 const setup = require('./setup.js');
 const tap = require('tap');
 const async = require('async');
 const hookStatus = require('../lib/hookStatus');
-const retry = require('../lib/retry');
 
 tap.test('adds a server method that will process an hook composed of actions', (t) => {
   setup({
@@ -177,77 +175,6 @@ tap.test('"decorate" option will register the method with "server.decorate" inst
   });
 });
 
-tap.test('can handle and report callback errors during an action', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'before school': ['breakfast']
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      breakfast: 0
-    };
-    server.method('breakfast', (data, callback) => {
-      if (numberOfCalls.breakfast === 2) {
-        return callback();
-      }
-      numberOfCalls.breakfast ++;
-      return callback('I am an error');
-    });
-    server.methods.hook('before school', {
-      name: 'sven',
-      age: 5
-    });
-    server.on('hook:complete', () => {
-      if (numberOfCalls.breakfast === 2) {
-        // check the db object:
-        collection.findOne({}, (err2, hook) => {
-          t.equal(hook.results.length, 1);
-          t.equal(hook.results[0].error, 'I am an error');
-          return done(t);
-        });
-      }
-    });
-  });
-});
-
-tap.test('can handle and report hook errors during an action', (t) => {
-  setup({
-    log: false,
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'before school': ['breakfast']
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      breakfast: 0
-    };
-    server.method('breakfast', (data, callback) => {
-      if (numberOfCalls.breakfast === 1) {
-        return callback();
-      }
-      numberOfCalls.breakfast ++;
-      return callback(new Error('this is a thrown error'));
-    });
-    server.methods.hook('before school', {
-      name: 'sven',
-      age: 5
-    });
-    server.on('hook:complete', () => {
-      t.equal(numberOfCalls.breakfast, 1);
-      done(t);
-    });
-  });
-});
-
 tap.test('handles actions passed in a { method s: <method>, data: <data> } form', (t) => {
   let passedData = null;
   setup({
@@ -299,40 +226,6 @@ tap.test('will not add an hook if it does not exist', (t) => {
   });
 });
 
-tap.test('will allow recurring hooks to be passed in the config', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 100,
-    hooks: {
-      'after:school': [
-        'baseball'
-      ]
-    },
-    recurring: {
-      doBaseBall: {
-        hook: 'after:school',
-        schedule: 'every 1 second'
-      }
-    }
-  }, (server, collection, db, done) => {
-    let numberCalls = 0;
-    server.on('hook:complete', () => {
-      if (numberCalls > 5) {
-        t.ok(true);
-        return done(t);
-      }
-    });
-    server.method('baseball', (data, next) => {
-      numberCalls++;
-      return next();
-    });
-  });
-});
-
 tap.test('hook status only shows hooks that have completed since last run', (t) => {
   setup({
     mongo: {
@@ -374,206 +267,6 @@ tap.test('hook status only shows hooks that have completed since last run', (t) 
     }, () => {
       allDone(t);
     });
-  });
-});
-
-tap.test('will not retry if status was not "failed" ', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 200,
-    hooks: {
-      'before school': [
-        'dodgeball'
-      ]
-    }
-  }, (server, collection, db, allDone) => {
-    async.autoInject({
-      insert1(done) {
-        collection.insert({ _id: 'myHookId', status: 'complete' }, done);
-      },
-      retry1(insert1, done) {
-        let called;
-        server.on('log', (data) => {
-          // only check this first time log is called:
-          if (!called) {
-            called = true;
-            t.equal(data.tags[1], 'repeat', 'logs repeat message');
-            t.notEqual(data.data.message.indexOf('myHookId did not fail'), -1, 'notifies hook id did not fail');
-          }
-        });
-        retry(server, {}, collection, 'myHookId', (err) => {
-          t.notEqual(err, null, 'calls callback if hook id was not "failed"');
-          done();
-        });
-      },
-    }, () => {
-      allDone(t);
-    });
-  });
-});
-
-tap.test('will return error if hook id does not exist', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 1000,
-    hooks: {
-      repeat: [
-        'repeatableHook()',
-      ]
-    }
-  }, (server, collection, db, done) => {
-    server.methods.retryHook('does_not_exist', (err, res) => {
-      t.notEqual(err, null);
-      done(t);
-    });
-  });
-});
-
-tap.test('will return error if hook id does not exist when used as decoration', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 1000,
-    decorate: true,
-    hooks: {
-      repeat: [
-        'repeatableHook()',
-      ]
-    }
-  }, (server, collection, db, done) => {
-    server.retryHook('does_not_exist', (err, res) => {
-      t.notEqual(err, null);
-      done(t);
-    });
-  });
-});
-
-tap.test('supports the runAfter option', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0
-    };
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback(null, numberOfCalls.kickball);
-    });
-    const startTime = new Date().getTime();
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      runAfter: new Date(new Date().getTime() + 250)
-    });
-    let called = false;
-    server.on('hook:complete', () => {
-      if (called) {
-        return;
-      }
-      called = true;
-      const endTime = new Date().getTime();
-      t.equal(endTime - startTime > 250, true, 'starts after specified runAfter time');
-      return done(t);
-    });
-  });
-});
-
-tap.test('supports the runEvery option', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    log: false,
-    interval: 100,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, done) => {
-    const numberOfCalls = {
-      kickball: 0
-    };
-    server.method('kickball', (data, callback) => {
-      numberOfCalls.kickball ++;
-      callback();
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      runEvery: 'every 1 seconds',
-      hookId: 'afterSchool'
-    });
-    server.on('hook:complete', () => {
-      if (numberOfCalls.kickball > 2) {
-        return done(t);
-      }
-    });
-  });
-});
-
-tap.test('calls hook server events', (t) => {
-  setup({
-    mongo: {
-      host: 'mongodb://localhost:27017/hooks',
-      collectionName: 'hapi-hooks-test'
-    },
-    interval: 500,
-    hooks: {
-      'after school': [
-        'kickball'
-      ]
-    }
-  }, (server, collection, db, allDone) => {
-    server.method('kickball', (data, callback) => {
-      callback();
-    });
-    const called = [];
-    server.on('hook:query', () => {
-      called.push('query');
-    });
-    server.on('hook:start', () => {
-      called.push('start');
-    });
-    server.on('hook:complete', () => {
-      called.push('complete');
-    });
-    server.methods.hook('after school', {
-      name: 'bob',
-      age: 7
-    }, {
-      runEvery: 'every 2 seconds'
-    });
-    async.until(
-      () => called.length === 3,
-      (skip) => setTimeout(skip, 200),
-      () => {
-        t.equal(called[0], 'query', 'call query first');
-        t.equal(called[1], 'start', 'call start second');
-        t.equal(called[2], 'complete', 'call complete third');
-        allDone(t);
-      });
   });
 });
 
@@ -625,52 +318,54 @@ tap.test('will wait to process next batch of hooks until all previous hooks are 
   });
 });
 
-tap.test('retry a hook from id', (t) => {
-  let key = 0; // our test hook won't pass while key is zero
-  let numberOfCalls = 0;
-  async.autoInject({
-    startup(done) {
-      setup({
-        mongo: {
-          host: 'mongodb://localhost:27017/hooks',
-          collectionName: 'hapi-hooks-test'
-        },
-        interval: 1000,
-        hooks: {
-          repeat: [
-            'repeatableHook()',
-          ]
-        }
-      }, (server, collection, db, cleanup) => {
-        // this method  won't work until someone changes 'key':
-        server.method('repeatableHook', (callback) => {
-          if (key === 0) {
-            return callback(new Error('key was zero'));
-          }
-          numberOfCalls++;
-          return callback(null, true);
-        });
-        server.methods.hook('repeat', {});
-        return done(null, { server, collection, cleanup });
-      });
+tap.test('hookId updates existing hook', (t) => {
+  setup({
+    mongo: {
+      host: 'mongodb://localhost:27017/hooks',
+      collectionName: 'hapi-hooks-test'
     },
-    // wait for the hook to fire, since key is 0 it won't work:
-    wait(startup, done) {
-      setTimeout(done, 1500);
-    },
-    // get the id for the failed job:
-    id(startup, wait, done) {
-      startup.collection.find({ status: 'failed' }).toArray(done);
-    },
-    retry(id, startup, done) {
-      key = 1;
-      startup.server.methods.retryHook(id[0]._id, done);
+    interval: 500,
+    hooks: {
+      'hookId update': [
+        'updateHook'
+      ]
     }
-  }, (err, result) => {
-    t.equal(err, null);
-    t.equal(numberOfCalls > 0, true);
-    t.equal(result.retry.results.length, 1);
-    t.equal(result.retry.results[0].output, true);
-    result.startup.cleanup(t);
+  }, (server, collection, db, done) => {
+    const date1 = new Date(new Date().getTime() + 250);
+    const date2 = new Date(new Date().getTime() + 3500);
+    async.autoInject({
+      addHook(cb) {
+        server.methods.hook('hookId update', { name: 'test1' }, { hookId: 'hookid-update', runAfter: date1 });
+        setTimeout(cb, 200);
+      },
+      checkCount(addHook, cb) {
+        collection.find({ hookId: 'hookid-update' }).toArray((err, res) => {
+          if (err) {
+            return cb(err);
+          }
+
+          t.equal(res.length, 1, 'Only one hook');
+          cb();
+        });
+      },
+      updateHook(checkCount, cb) {
+        server.methods.hook('hookId update', { name: 'test2' }, { hookId: 'hookid-update', runAfter: date2 });
+        setTimeout(cb, 200);
+      },
+      checkUpdated(updateHook, cb) {
+        collection.find({ hookId: 'hookid-update' }).toArray((err, res) => {
+          if (err) {
+            return cb(err);
+          }
+
+          t.equal(res.length, 1, 'Still only one hook');
+          t.notEqual(res[0].runAfter, date1, 'Run after updates');
+          t.equal(res[0].hookData.name, 'test2', 'Run after updates');
+          cb();
+        });
+      }
+    }, () => {
+      done(t);
+    });
   });
 });
