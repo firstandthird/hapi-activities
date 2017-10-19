@@ -13,19 +13,32 @@
   ],
   "author": "First+Third",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/firstandthird/hapi-hooks.git"
+  },
   "dependencies": {
     "async": "^2.5.0",
     "later": "^1.2.0",
     "later-timezone": "^1.0.0",
     "lodash.get": "^4.4.2",
-    "mongodb": "^2.2.10",
+    "mongodb": "^2.2.33",
     "str2fn": "^2.0.0"
   },
   "devDependencies": {
-    "eslint": "^3.4.0",
-    "eslint-config-firstandthird": "^3.0.2",
-    "eslint-plugin-import": "^2.2.0",
-    "hapi": "^16.0.2",
+    "eslint": "^4.9.0",
+    "eslint-config-firstandthird": "^4.0.1",
+    "eslint-plugin-import": "^2.7.0",
+    "hapi": "^16.6.2",
     "tap": "^10.7.2"
+  },
+  "bugs": {
+    "url": "https://github.com/firstandthird/hapi-hooks/issues"
+  },
+  "homepage": "https://github.com/firstandthird/hapi-hooks#readme",
+  "directories": {
+    "example": "example",
+    "lib": "lib",
+    "test": "test"
   }
 }
