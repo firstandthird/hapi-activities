@@ -76,5 +76,5 @@ Note that the server methods within an hook call are invoked in parallel, so the
 
 Pass the following options:
 
-`runEvery` - A laterjs supported string, ex: `every week`
-`recurringId` - A unique identifier. Used to prevent duplicate recurring hooks
+`runEvery` - A laterjs supported string, ex: `at 5pm sunday`
+`hookId` - A unique identifier. Used to prevent duplicate hooks (Recommended for all hooks)
