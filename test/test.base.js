@@ -361,6 +361,7 @@ tap.test('hookId updates existing hook', (t) => {
           t.equal(res.length, 1, 'Still only one hook');
           t.notEqual(res[0].runAfter, date1, 'Run after updates');
           t.equal(res[0].hookData.name, 'test2', 'Run after updates');
+          t.equal(res[0].status, 'waiting', 'status still there');
           cb();
         });
       }
